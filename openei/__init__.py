@@ -18,10 +18,6 @@ class NotAuthorized(Exception):
     """Exception for invalid API key."""
 
 
-class PlanMismatch(Exception):
-    """Exception for rate plans do not match what was requested."""
-
-
 class APIError(Exception):
     """Exception for API errors."""
 
@@ -90,9 +86,6 @@ class Rates:
 
         if "items" in result.json().keys():
             data = result.json()["items"][0]
-            if data["label"] != self._plan:
-                raise PlanMismatch
-
             self._data = data
 
     @property
