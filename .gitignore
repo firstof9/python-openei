@@ -1,3 +1,33 @@
 
 *.pyc
+
+# Unit test / coverage reports
 .coverage
+.tox
+coverage.xml
+nosetests.xml
+htmlcov/
+test-reports/
+test-results.xml
+test-output.xml
+
+# pytest
+.pytest_cache
+.cache
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+.eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+pip-wheel-metadata
