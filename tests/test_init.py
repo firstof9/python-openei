@@ -3,7 +3,7 @@ from unittest.mock import patch
 from datetime import time
 from freezegun import freeze_time
 import pytest
-import openei
+import openeihttp
 
 
 def test_get_lookup_data(test_lookup, lookup_mock):
@@ -187,31 +187,31 @@ def test_get_name(test_rates, plandata_mock):
 
 def test_get_lookup_data_404(test_lookup, lookup_mock_404):
     """Test lookup error 404"""
-    with pytest.raises(openei.UrlNotFound):
+    with pytest.raises(openeihttp.UrlNotFound):
         test_lookup.lookup_plans()
 
 
 def test_get_lookup_data_401(test_lookup, lookup_mock_401):
     """Test lookup error 401"""
-    with pytest.raises(openei.NotAuthorized):
+    with pytest.raises(openeihttp.NotAuthorized):
         test_lookup.lookup_plans()
 
 
 def test_get_plan_data_404(test_rates, plandata_mock_404):
     """Test rate schedules."""
-    with pytest.raises(openei.UrlNotFound):
+    with pytest.raises(openeihttp.UrlNotFound):
         test_rates.update()
 
 
 def test_get_plan_data_401(test_rates, plandata_mock_401):
     """Test rate schedules."""
-    with pytest.raises(openei.NotAuthorized):
+    with pytest.raises(openeihttp.NotAuthorized):
         test_rates.update()
 
 
 def test_get_plan_data_api_err(test_rates, plandata_mock_api_err, caplog):
     """Test rate schedules."""
-    with pytest.raises(openei.APIError):
+    with pytest.raises(openeihttp.APIError):
         test_rates.update()
         assert (
             "No api_key was supplied. Get one at https://api.openei.org:443"
@@ -221,7 +221,7 @@ def test_get_plan_data_api_err(test_rates, plandata_mock_api_err, caplog):
 
 def test_get_lookup_data_api_err(test_lookup, lookup_mock_api_err, caplog):
     """Test rate schedules."""
-    with pytest.raises(openei.APIError):
+    with pytest.raises(openeihttp.APIError):
         test_lookup.lookup_plans()
         assert (
             "No api_key was supplied. Get one at https://api.openei.org:443"

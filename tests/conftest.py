@@ -2,20 +2,20 @@
 import pytest
 import json
 
-import openei
+import openeihttp
 from tests.common import load_fixture
 
 
 @pytest.fixture(name="test_lookup")
 def test_lookup():
     """Load the charger data."""
-    return openei.Rates(api="fakeAPIKey", lat="1", lon="1")
+    return openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
 
 
 @pytest.fixture(name="test_rates")
 def test_rates():
     """Load the charger data."""
-    return openei.Rates(
+    return openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
 
