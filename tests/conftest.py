@@ -1,6 +1,5 @@
 """Provide common pytest fixtures."""
 import pytest
-import json
 
 import openeihttp
 from tests.common import load_fixture
