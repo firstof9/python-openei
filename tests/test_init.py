@@ -1,6 +1,4 @@
 """Test main functions."""
-from unittest.mock import patch
-from datetime import time
 from freezegun import freeze_time
 import pytest
 import openeihttp
