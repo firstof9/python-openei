@@ -162,6 +162,37 @@ def test_get_rate_data_weekend(test_rates, plandata_mock):
     assert status == 0.06118
 
 
+@freeze_time("2021-08-14 13:20:00")
+def test_get_rate_data_weekend_demand(test_rates, demand_plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.current_demand_rate
+    assert status == 0
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_rate_data_demand(test_rates, demand_plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.current_demand_rate
+    assert status == 0
+
+
+@freeze_time("2021-08-13 17:20:00")
+def test_get_rate_data_2_demand(test_rates, demand_plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.current_demand_rate
+    assert status == 8.4
+
+
+def test_get_demand_unit(test_rates, demand_plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.demand_unit
+    assert status == "kW"
+
+
 def test_get_distributed_generation(test_rates, plandata_mock):
     """Test rate schedules."""
     test_rates.update()

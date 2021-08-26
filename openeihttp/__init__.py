@@ -110,6 +110,33 @@ class Rates:
         return rate
 
     @property
+    def current_demand_rate(self) -> float:
+        """Return the current rate."""
+        assert self._data is not None
+        weekend = False
+        now = datetime.datetime.today()
+        month = now.month - 1
+        hour = now.hour
+        if now.weekday() > 4:
+            weekend = True
+        table = "demandweekdayschedule"
+        if weekend:
+            table = "demandweekendschedule"
+
+        lookup_table = self._data[table]
+        rate_structure = lookup_table[month][hour]
+
+        rate = self._data["demandratestructure"][rate_structure][0]["rate"]
+
+        return rate
+
+    @property
+    def demand_unit(self) -> str:
+        """Return the demand rate unit."""
+        assert self._data is not None
+        return self._data["demandrateunit"]
+
+    @property
     def rate_name(self) -> str:
         """Return the rate name."""
         assert self._data is not None
