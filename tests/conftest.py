@@ -37,6 +37,15 @@ def mock_plandata(requests_mock):
     )
 
 
+@pytest.fixture(name="demand_plandata_mock")
+def mock_demand_plandata(requests_mock):
+    """Mock the status reply."""
+    requests_mock.get(
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        text=load_fixture("plan_demand_data.json"),
+    )
+
+
 @pytest.fixture(name="lookup_mock_404")
 def mock_lookup_404(requests_mock):
     """Mock the status reply."""
