@@ -1,4 +1,4 @@
-"""Setup module for python-openevse-http."""
+"""Setup module for python-openei-http."""
 from pathlib import Path
 
 from setuptools import find_packages, setup

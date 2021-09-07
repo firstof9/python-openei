@@ -110,6 +110,17 @@ class Rates:
         return rate
 
     @property
+    def all_rates(self) -> list:
+        """Return the current rate."""
+        assert self._data is not None
+        rates = []
+        rate_data = self._data["energyratestructure"]
+        for rate in rate_data:
+            rates.append(rate[0]["rate"])
+
+        return rates
+
+    @property
     def current_demand_rate(self) -> float:
         """Return the current rate."""
         assert self._data is not None

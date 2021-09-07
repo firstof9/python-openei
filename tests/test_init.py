@@ -256,3 +256,17 @@ def test_get_lookup_data_api_err(test_lookup, lookup_mock_api_err, caplog):
             "No api_key was supplied. Get one at https://api.openei.org:443"
             in caplog.text
         )
+
+
+def test_get_all_rates(test_rates, plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.all_rates
+    assert status == [0.24477, 0.06118, 0.19847, 0.06116]
+
+
+def test_get_all_rates_demand(test_rates, demand_plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.all_rates
+    assert status == [0.07798, 0.11017, 0.1316]
