@@ -270,3 +270,11 @@ def test_get_all_rates_demand(test_rates, demand_plandata_mock):
     test_rates.update()
     status = test_rates.all_rates
     assert status == [0.07798, 0.11017, 0.1316]
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_rate_data(test_rates, plandata_radius_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.current_rate
+    assert status == 0.06118

@@ -37,6 +37,15 @@ def mock_plandata(requests_mock):
     )
 
 
+@pytest.fixture(name="plandata_radius_mock")
+def mock_plandata(requests_mock):
+    """Mock the status reply."""
+    requests_mock.get(
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b&radius=20",
+        text=load_fixture("plan_data.json"),
+    )
+
+
 @pytest.fixture(name="demand_plandata_mock")
 def mock_demand_plandata(requests_mock):
     """Mock the status reply."""
