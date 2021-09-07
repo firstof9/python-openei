@@ -1,11 +1,11 @@
-"""Setup module for python-openevse-http."""
+"""Setup module for python-openei-http."""
 from pathlib import Path
 
 from setuptools import find_packages, setup
 
 PROJECT_DIR = Path(__file__).parent.resolve()
 README_FILE = PROJECT_DIR / "README.md"
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 
 setup(
