@@ -31,12 +31,14 @@ class Rates:
         lat: float,
         lon: float,
         plan: str = None,
+        radius: float = None,
     ) -> None:
         """Initialize."""
         self._api = api
         self._lat = lat
         self._lon = lon
         self._plan = plan
+        self._radius = radius
         self._data = None
 
     def lookup_plans(self) -> Dict[str, Any]:
@@ -44,6 +46,8 @@ class Rates:
         url = f"{BASE_URL}version=latest&format=json"
         url = f"{url}&api_key={self._api}&lat={self._lat}&lon={self._lon}"
         url = f"{url}&sector=Residential"
+        if self._radius is not None:
+            url = f"{url}&radius={self._radius}"
         rate_names: Dict[str, Any] = {}
 
         result = requests.get(url)
