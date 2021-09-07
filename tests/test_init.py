@@ -273,7 +273,7 @@ def test_get_all_rates_demand(test_rates, demand_plandata_mock):
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_rate_data(test_rates, plandata_radius_mock):
+def test_get_rate_data_radius(test_rates, plandata_radius_mock):
     """Test rate schedules."""
     test_rates.update()
     status = test_rates.current_rate
