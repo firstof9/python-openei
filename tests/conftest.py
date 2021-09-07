@@ -11,6 +11,12 @@ def test_lookup():
     return openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
 
 
+@pytest.fixture(name="test_lookup_radius")
+def test_lookup_radius():
+    """Load the charger data."""
+    return openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1", radius="20")
+
+
 @pytest.fixture(name="test_rates")
 def test_rates():
     """Load the charger data."""
@@ -25,6 +31,15 @@ def mock_lookup(requests_mock):
     requests_mock.get(
         "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
         text=load_fixture("lookup.json"),
+    )
+
+
+@pytest.fixture(name="lookup_mock_radius")
+def mock_lookup_radius(requests_mock):
+    """Mock the status reply."""
+    requests_mock.get(
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&radius=20",
+        text=load_fixture("lookup_radius.json"),
     )
 
 
