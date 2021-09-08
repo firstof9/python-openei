@@ -115,13 +115,15 @@ class Rates:
             if self._reading:
                 value = float(self._reading)
                 rate_data = self._data["energyratestructure"][rate_structure]
-                for rate in rate_data:
-                    if "max" in rate.keys() and value < rate["max"]:
-                        return rate["rate"]
+                for max in rate_data:
+                    if "max" in max.keys() and value < max["max"]:
+                        return max["rate"]
                     continue
                 return rate_data[-1]["rate"]
-            rate = self._data["energyratestructure"][rate_structure][0]["rate"]
-            return rate
+            else:
+                rate = self._data["energyratestructure"][rate_structure][0]["rate"]
+
+                return rate
         return None
 
     @property
