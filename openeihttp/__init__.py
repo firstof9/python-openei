@@ -76,6 +76,8 @@ class Rates:
         url = f"{BASE_URL}version=latest&format=json"
         url = f"{url}&api_key={self._api}&lat={self._lat}&lon={self._lon}"
         url = f"{url}&sector=Residential&detail=full&getpage={self._plan}"
+        if self._radius is not None:
+            url = f"{url}&radius={self._radius}"
 
         result = requests.get(url)
         if result.status_code == 404:
