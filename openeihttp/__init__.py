@@ -95,63 +95,71 @@ class Rates:
             self._data = data
 
     @property
-    def current_rate(self) -> float:
+    def current_rate(self) -> float | None:
         """Return the current rate."""
         assert self._data is not None
-        weekend = False
-        now = datetime.datetime.today()
-        month = now.month - 1
-        hour = now.hour
-        if now.weekday() > 4:
-            weekend = True
-        table = "energyweekdayschedule"
-        if weekend:
-            table = "energyweekendschedule"
+        if "energyratestructure" in self._data.keys():
+            weekend = False
+            now = datetime.datetime.today()
+            month = now.month - 1
+            hour = now.hour
+            if now.weekday() > 4:
+                weekend = True
+            table = "energyweekdayschedule"
+            if weekend:
+                table = "energyweekendschedule"
 
-        lookup_table = self._data[table]
-        rate_structure = lookup_table[month][hour]
+            lookup_table = self._data[table]
+            rate_structure = lookup_table[month][hour]
 
-        rate = self._data["energyratestructure"][rate_structure][0]["rate"]
+            rate = self._data["energyratestructure"][rate_structure][0]["rate"]
 
-        return rate
+            return rate
+        return None
 
     @property
-    def all_rates(self) -> list:
+    def all_rates(self) -> list | None:
         """Return the current rate."""
         assert self._data is not None
-        rates = []
-        rate_data = self._data["energyratestructure"]
-        for rate in rate_data:
-            rates.append(rate[0]["rate"])
+        if "energyratestructure" in self._data.keys():
+            rates = []
+            rate_data = self._data["energyratestructure"]
+            for rate in rate_data:
+                rates.append(rate[0]["rate"])
 
-        return rates
+            return rates
+        return None
 
     @property
-    def current_demand_rate(self) -> float:
+    def current_demand_rate(self) -> float | None:
         """Return the current rate."""
         assert self._data is not None
-        weekend = False
-        now = datetime.datetime.today()
-        month = now.month - 1
-        hour = now.hour
-        if now.weekday() > 4:
-            weekend = True
-        table = "demandweekdayschedule"
-        if weekend:
-            table = "demandweekendschedule"
+        if "demandratestructure" in self._data.keys():
+            weekend = False
+            now = datetime.datetime.today()
+            month = now.month - 1
+            hour = now.hour
+            if now.weekday() > 4:
+                weekend = True
+            table = "demandweekdayschedule"
+            if weekend:
+                table = "demandweekendschedule"
 
-        lookup_table = self._data[table]
-        rate_structure = lookup_table[month][hour]
+            lookup_table = self._data[table]
+            rate_structure = lookup_table[month][hour]
 
-        rate = self._data["demandratestructure"][rate_structure][0]["rate"]
+            rate = self._data["demandratestructure"][rate_structure][0]["rate"]
 
-        return rate
+            return rate
+        return None
 
     @property
-    def demand_unit(self) -> str:
+    def demand_unit(self) -> str | None:
         """Return the demand rate unit."""
         assert self._data is not None
-        return self._data["demandrateunit"]
+        if "demandrateunit" in self._data.keys():
+            return self._data["demandrateunit"]
+        return None
 
     @property
     def rate_name(self) -> str:
@@ -166,7 +174,9 @@ class Rates:
         return self._data["approved"]
 
     @property
-    def distributed_generation(self) -> str:
+    def distributed_generation(self) -> str | None:
         """Return the distributed generation name."""
         assert self._data is not None
-        return self._data["dgrules"]
+        if "dgrules" in self._data.keys():
+            return self._data["dgrules"]
+        return None
