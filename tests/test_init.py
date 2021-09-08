@@ -627,3 +627,43 @@ def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius):
             },
         ],
     }
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_tier_rate_data_low(test_lookup_tier_low, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_low.update()
+    status = test_lookup_tier_low.current_rate
+    assert status == 0.25902
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_tier_rate_data_med(test_lookup_tier_med, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_med.update()
+    status = test_lookup_tier_med.current_rate
+    assert status == 0.32596
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_tier_rate_data_high(test_lookup_tier_high, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_high.update()
+    status = test_lookup_tier_high.current_rate
+    assert status == 0.40745
+
+
+@freeze_time("2021-08-13 13:20:00")
+def test_get_tier_rate_data_2(test_lookup_tier_low, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_low.update()
+    status = test_lookup_tier_low.current_rate
+    assert status == 0.25902
+
+
+@freeze_time("2021-08-14 13:20:00")
+def test_get_tier_rate_data_weekend(test_lookup_tier_low, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_low.update()
+    status = test_lookup_tier_low.current_rate
+    assert status == 0.25902

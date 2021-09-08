@@ -32,6 +32,7 @@ class Rates:
         lon: float,
         plan: str = None,
         radius: float = None,
+        reading: float = None,
     ) -> None:
         """Initialize."""
         self._api = api
@@ -39,6 +40,7 @@ class Rates:
         self._lon = lon
         self._plan = plan
         self._radius = radius
+        self._reading = reading
         self._data = None
 
     def lookup_plans(self) -> Dict[str, Any]:
@@ -108,13 +110,20 @@ class Rates:
             table = "energyweekdayschedule"
             if weekend:
                 table = "energyweekendschedule"
-
             lookup_table = self._data[table]
             rate_structure = lookup_table[month][hour]
+            if self._reading:
+                value = float(self._reading)
+                rate_data = self._data["energyratestructure"][rate_structure]
+                for max in rate_data:
+                    if "max" in max.keys() and value < max["max"]:
+                        return max["rate"]
+                    continue
+                return rate_data[-1]["rate"]
+            else:
+                rate = self._data["energyratestructure"][rate_structure][0]["rate"]
 
-            rate = self._data["energyratestructure"][rate_structure][0]["rate"]
-
-            return rate
+                return rate
         return None
 
     @property
