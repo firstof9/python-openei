@@ -152,6 +152,7 @@ class Rates:
                     continue
                 return rate_data[-1]["rate"]
             return None
+        return None
 
     @property
     def all_rates(self) -> list | None:
