@@ -125,6 +125,36 @@ class Rates:
         return None
 
     @property
+    def monthly_tier_rate(self) -> float | None:
+        """Return tier rate.
+
+        Requires the monthy accumulative meter reading.
+        """
+        assert self._data is not None
+        if "energyratestructure" in self._data.keys():
+            weekend = False
+            now = datetime.datetime.today()
+            month = now.month - 1
+            hour = now.hour
+            if now.weekday() > 4:
+                weekend = True
+            table = "energyweekdayschedule"
+            if weekend:
+                table = "energyweekendschedule"
+            lookup_table = self._data[table]
+            rate_structure = lookup_table[month][hour]
+            if self._reading:
+                value = float(self._reading)
+                rate_data = self._data["energyratestructure"][rate_structure]
+                for rate in rate_data:
+                    if "max" in rate.keys() and value < (rate["max"] * 29):
+                        return rate["rate"]
+                    continue
+                return rate_data[-1]["rate"]
+            return None
+        return None
+
+    @property
     def all_rates(self) -> list | None:
         """Return the current rate."""
         assert self._data is not None

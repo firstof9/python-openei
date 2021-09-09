@@ -667,3 +667,33 @@ def test_get_tier_rate_data_weekend(test_lookup_tier_low, tier_plandata_mock):
     test_lookup_tier_low.update()
     status = test_lookup_tier_low.current_rate
     assert status == 0.25902
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_monthly_tier_rate_data_low(
+    test_lookup_monthly_tier_low, tier_plandata_mock
+):
+    """Test rate schedules."""
+    test_lookup_monthly_tier_low.update()
+    status = test_lookup_monthly_tier_low.monthly_tier_rate
+    assert status == 0.25902
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_monthly_tier_rate_data_med(
+    test_lookup_monthly_tier_med, tier_plandata_mock
+):
+    """Test rate schedules."""
+    test_lookup_monthly_tier_med.update()
+    status = test_lookup_monthly_tier_med.monthly_tier_rate
+    assert status == 0.32596
+
+
+@freeze_time("2021-08-13 10:21:34")
+def test_get_monthly_tier_rate_data_high(
+    test_lookup_monthly_tier_high, tier_plandata_mock
+):
+    """Test rate schedules."""
+    test_lookup_monthly_tier_high.update()
+    status = test_lookup_monthly_tier_high.monthly_tier_rate
+    assert status == 0.40745
