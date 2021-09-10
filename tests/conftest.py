@@ -11,6 +11,12 @@ def test_lookup():
     return openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
 
 
+@pytest.fixture(name="test_lookup_address")
+def test_lookup_address():
+    """Load the charger data."""
+    return openeihttp.Rates(api="fakeAPIKey", address="12345")
+
+
 @pytest.fixture(name="test_lookup_radius")
 def test_lookup_radius():
     """Load the charger data."""
@@ -103,11 +109,28 @@ def test_rates():
     )
 
 
+@pytest.fixture(name="test_rates_address")
+def test_rates_address():
+    """Load the charger data."""
+    return openeihttp.Rates(
+        api="fakeAPIKey", address="12345", plan="574613aa5457a3557e906f5b"
+    )
+
+
 @pytest.fixture(name="lookup_mock")
 def mock_lookup(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
         "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
+        text=load_fixture("lookup.json"),
+    )
+
+
+@pytest.fixture(name="lookup_mock_address")
+def mock_lookup_address(requests_mock):
+    """Mock the status reply."""
+    requests_mock.get(
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&address=12345&sector=Residential",
         text=load_fixture("lookup.json"),
     )
 
@@ -126,6 +149,15 @@ def mock_plandata(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
         "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        text=load_fixture("plan_data.json"),
+    )
+
+
+@pytest.fixture(name="plandata_mock_address")
+def mock_plandata_address(requests_mock):
+    """Mock the status reply."""
+    requests_mock.get(
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&address=12345&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
         text=load_fixture("plan_data.json"),
     )
 

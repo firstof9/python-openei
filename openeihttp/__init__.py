@@ -28,8 +28,8 @@ class Rates:
     def __init__(
         self,
         api: str,
-        lat: float,
-        lon: float,
+        lat: float = None,
+        lon: float = None,
         plan: str = None,
         radius: float = None,
         address: str = None,
