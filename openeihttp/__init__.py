@@ -32,6 +32,7 @@ class Rates:
         lon: float,
         plan: str = None,
         radius: float = None,
+        address: str = None,
         reading: float = None,
     ) -> None:
         """Initialize."""
@@ -41,15 +42,22 @@ class Rates:
         self._plan = plan
         self._radius = radius
         self._reading = reading
+        self._address = address
         self._data = None
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
         url = f"{BASE_URL}version=latest&format=json"
-        url = f"{url}&api_key={self._api}&lat={self._lat}&lon={self._lon}"
+        url = f"{url}&api_key={self._api}"
         url = f"{url}&sector=Residential"
         if self._radius is not None:
             url = f"{url}&radius={self._radius}"
+
+        if self._address is None:
+            url = f"{url}&lat={self._lat}&lon={self._lon}"
+        else:
+            url = f"{url}&address={self._address}"
+
         rate_names: Dict[str, Any] = {}
 
         result = requests.get(url)
@@ -75,11 +83,16 @@ class Rates:
 
     def update(self) -> None:
         """Update the data."""
-        url = f"{BASE_URL}version=latest&format=json"
-        url = f"{url}&api_key={self._api}&lat={self._lat}&lon={self._lon}"
-        url = f"{url}&sector=Residential&detail=full&getpage={self._plan}"
+        url = f"{BASE_URL}version=latest&format=json&sector=Residential"
+        url = f"{url}&detail=full&api_key={self._api}"
+        url = f"{url}&getpage={self._plan}"
         if self._radius is not None:
             url = f"{url}&radius={self._radius}"
+
+        if self._address is None:
+            url = f"{url}&lat={self._lat}&lon={self._lon}"
+        else:
+            url = f"{url}&address={self._address}"
 
         result = requests.get(url)
         if result.status_code == 404:
