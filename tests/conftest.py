@@ -148,7 +148,7 @@ def mock_lookup_radius(requests_mock):
 def mock_plandata(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         text=load_fixture("plan_data.json"),
     )
 
@@ -157,7 +157,7 @@ def mock_plandata(requests_mock):
 def mock_plandata_address(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&address=12345&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         text=load_fixture("plan_data.json"),
     )
 
@@ -166,7 +166,7 @@ def mock_plandata_address(requests_mock):
 def mock_demand_plandata(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         text=load_fixture("plan_demand_data.json"),
     )
 
@@ -175,7 +175,7 @@ def mock_demand_plandata(requests_mock):
 def mock_tier_plandata(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         text=load_fixture("plan_tier_data.json"),
     )
 
@@ -193,7 +193,7 @@ def mock_lookup_404(requests_mock):
 def mock_plandata_404(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         status_code=404,
     )
 
@@ -211,7 +211,7 @@ def mock_lookup_401(requests_mock):
 def mock_plandata_401(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         status_code=401,
     )
 
@@ -220,7 +220,7 @@ def mock_plandata_401(requests_mock):
 def mock_plandata_api_err(requests_mock):
     """Mock the status reply."""
     requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&detail=full&getpage=574613aa5457a3557e906f5b",
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
         text=load_fixture("api_error.json"),
     )
 

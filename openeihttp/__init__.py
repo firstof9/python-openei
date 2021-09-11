@@ -83,16 +83,8 @@ class Rates:
 
     def update(self) -> None:
         """Update the data."""
-        url = f"{BASE_URL}version=latest&format=json&sector=Residential"
-        url = f"{url}&detail=full&api_key={self._api}"
-        url = f"{url}&getpage={self._plan}"
-        if self._radius is not None:
-            url = f"{url}&radius={self._radius}"
-
-        if self._address is None:
-            url = f"{url}&lat={self._lat}&lon={self._lon}"
-        else:
-            url = f"{url}&address={self._address}"
+        url = f"{BASE_URL}version=latest&format=json&detail=full"
+        url = f"{url}&api_key={self._api}&getpage={self._plan}"
 
         result = requests.get(url)
         if result.status_code == 404:
