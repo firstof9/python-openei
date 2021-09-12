@@ -22,6 +22,14 @@ class APIError(Exception):
     """Exception for API errors."""
 
 
+class InvalidCall(Exception):
+    """Exception for invalid library calls."""
+
+
+class MissingAPIKey(Exception):
+    """Exception for missing API key."""
+
+
 class Rates:
     """Represent OpenEI Rates."""
 
@@ -44,9 +52,16 @@ class Rates:
         self._reading = reading
         self._address = address
         self._data = None
+        if self._api is None:
+            _LOGGER.error("Missing API key.")
+            raise MissingAPIKey
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
+        if not any([self._address, self._lat, self._lon]):
+            _LOGGER.error("Missing location data for a plan lookup.")
+            raise InvalidCall
+
         url = f"{BASE_URL}version=latest&format=json"
         url = f"{url}&api_key={self._api}"
         url = f"{url}&sector=Residential"
