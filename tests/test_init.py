@@ -846,5 +846,5 @@ def test_get_rate_data_address(test_rates_address, plandata_mock_address):
 def test_missing_loc(test_lookup_missing_loc, caplog):
     """Missing API key check."""
     with pytest.raises(InvalidCall):
-        status = test_lookup_missing_loc.lookup_plans()
+        test_lookup_missing_loc.lookup_plans()
         assert "Missing location data for a plan lookup." in caplog.text

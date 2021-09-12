@@ -34,9 +34,6 @@ def test_lookup_tier_low():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        radius="20",
         reading="5.1",
         plan="574613aa5457a3557e906f5b",
     )
@@ -47,9 +44,6 @@ def test_lookup_tier_med():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        radius="20",
         reading="10.3",
         plan="574613aa5457a3557e906f5b",
     )
@@ -60,9 +54,6 @@ def test_lookup_tier_high():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        radius="20",
         reading="40.1",
         plan="574613aa5457a3557e906f5b",
     )
@@ -73,9 +64,6 @@ def test_lookup_monthly_tier_low():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        radius="20",
         reading="114",
         plan="574613aa5457a3557e906f5b",
     )
@@ -86,9 +74,6 @@ def test_lookup_monthly_tier_med():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        radius="20",
         reading="301",
         plan="574613aa5457a3557e906f5b",
     )
@@ -99,9 +84,6 @@ def test_lookup_monthly_tier_high():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        radius="20",
         reading="1300",
         plan="574613aa5457a3557e906f5b",
     )
