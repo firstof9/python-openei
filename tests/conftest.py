@@ -11,6 +11,12 @@ def test_lookup():
     return openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
 
 
+@pytest.fixture(name="test_lookup_missing_loc")
+def test_lookup_missing_loc():
+    """Load the charger data."""
+    return openeihttp.Rates(api="fakeAPIKey")
+
+
 @pytest.fixture(name="test_lookup_address")
 def test_lookup_address():
     """Load the charger data."""

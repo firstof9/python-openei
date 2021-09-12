@@ -3,6 +3,8 @@ from freezegun import freeze_time
 import pytest
 import openeihttp
 
+from openeihttp import InvalidCall
+
 
 def test_get_lookup_data(test_lookup, lookup_mock):
     """Test v4 Status reply"""
@@ -839,3 +841,10 @@ def test_get_rate_data_address(test_rates_address, plandata_mock_address):
     test_rates_address.update()
     status = test_rates_address.current_rate
     assert status == 0.06118
+
+
+def test_missing_loc(test_lookup_missing_loc, caplog):
+    """Missing API key check."""
+    with pytest.raises(InvalidCall):
+        status = test_lookup_missing_loc.lookup_plans()
+        assert "Missing location data for a plan lookup." in caplog.text
