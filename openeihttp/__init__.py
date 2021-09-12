@@ -68,6 +68,8 @@ class Rates:
 
         rate_names: Dict[str, Any] = {}
 
+        _LOGGER.debug("Looking up plans via URL: %s", url)
+
         result = requests.get(url)
         if result.status_code == 404:
             raise UrlNotFound
@@ -94,6 +96,8 @@ class Rates:
         url = f"{BASE_URL}version=latest&format=json&detail=full"
         url = f"{url}&api_key={self._api}&getpage={self._plan}"
 
+        _LOGGER.debug("Updating data via URL: %s", url)
+
         result = requests.get(url)
         if result.status_code == 404:
             raise UrlNotFound
@@ -108,6 +112,7 @@ class Rates:
         if "items" in result.json().keys():
             data = result.json()["items"][0]
             self._data = data
+            _LOGGER.debug("Data updated, results: %s", self._data)
 
     @property
     def current_rate(self) -> float | None:
