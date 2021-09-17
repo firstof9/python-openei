@@ -235,3 +235,11 @@ class Rates:
         if "dgrules" in self._data.keys():
             return self._data["dgrules"]
         return None
+
+    @property
+    def mincharge(self) -> tuple | None:
+        """Return the mincharge."""
+        assert self._data is not None
+        if "mincharge" in self._data.keys():
+            return (self._data["mincharge"], self._data["minchargeunits"])
+        return None

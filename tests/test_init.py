@@ -848,3 +848,17 @@ def test_missing_loc(test_lookup_missing_loc, caplog):
     with pytest.raises(InvalidCall):
         test_lookup_missing_loc.lookup_plans()
         assert "Missing location data for a plan lookup." in caplog.text
+
+
+def test_mincharge(test_lookup_tier_low, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_low.update()
+    status = test_lookup_tier_low.mincharge
+    assert status == (10, "$/month")
+
+
+def test_mincharge_none(test_rates, plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.mincharge
+    assert status is None
