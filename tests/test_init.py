@@ -855,3 +855,10 @@ def test_mincharge(test_lookup_tier_low, tier_plandata_mock):
     test_lookup_tier_low.update()
     status = test_lookup_tier_low.mincharge
     assert status == (10, "$/month")
+
+
+def test_mincharge_none(test_rates, plandata_mock):
+    """Test rate schedules."""
+    test_rates.update()
+    status = test_rates.mincharge
+    assert status is None
