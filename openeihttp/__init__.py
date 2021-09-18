@@ -89,6 +89,8 @@ class Rates:
                 info = {"name": item["name"], "label": item["label"]}
                 rate_names[utility].append(info)
 
+        notlisted = "Not Listed"
+        rate_names[notlisted] = [{"name": notlisted, "label": notlisted}]
         return rate_names
 
     def update(self) -> None:
