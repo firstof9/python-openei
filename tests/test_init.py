@@ -136,7 +136,8 @@ def test_get_lookup_data(test_lookup, lookup_mock):
                 "name": "Residential Service (Pilot Technology Rate) R-Tech",
                 "label": "5caccd925457a31a537780e2",
             },
-        ]
+        ],
+        "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
     }
 
 
@@ -628,6 +629,7 @@ def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius):
                 "PRICE PLAN FOR RESIDENTIAL SERVICE",
             },
         ],
+        "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
     }
 
 
@@ -831,7 +833,8 @@ def test_get_lookup_data_with_address(test_lookup_address, lookup_mock_address):
                 "name": "Residential Service (Pilot Technology Rate) R-Tech",
                 "label": "5caccd925457a31a537780e2",
             },
-        ]
+        ],
+        "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
     }
 
 
