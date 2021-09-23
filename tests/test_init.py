@@ -275,7 +275,7 @@ def test_get_all_rates_demand(test_rates, demand_plandata_mock):
     assert status == [0.07798, 0.11017, 0.1316]
 
 
-def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius):
+def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius, caplog):
     """Test v4 Status reply"""
     status = test_lookup_radius.lookup_plans()
     assert status == {
@@ -631,6 +631,8 @@ def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius):
         ],
         "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
     }
+    # assert "&api_key=[REDACTED]" in caplog.text
+    # assert "&lat=[REDACTED]&lon=[REDACTED]" in caplog.text
 
 
 @freeze_time("2021-08-13 10:21:34")

@@ -49,6 +49,10 @@ class Rates:
         self._reading = reading
         self._address = address
         self._data = None
+        self._redact = [
+            self._api,
+            self._address,
+        ]
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
@@ -70,8 +74,14 @@ class Rates:
             url = f"{url}&address={self._address}"
 
         rate_names: Dict[str, Any] = {}
-
-        _LOGGER.debug("Looking up plans via URL: %s", url)
+        msg = url
+        for redact in self._redact:
+            if redact:
+                msg = msg.replace(str(redact), "[REDACTED]")
+        msg = msg.replace(
+            f"&lat={self._lat}&lon={self._lon}", "&lat=[REDACTED]&lon=[REDACTED]"
+        )
+        _LOGGER.debug("Looking up plans via URL: %s", msg)
 
         result = requests.get(url)
         if result.status_code == 404:
@@ -101,7 +111,11 @@ class Rates:
         url = f"{BASE_URL}version=latest&format=json&detail=full"
         url = f"{url}&api_key={self._api}&getpage={self._plan}"
 
-        _LOGGER.debug("Updating data via URL: %s", url)
+        msg = url
+        for redact in self._redact:
+            if redact:
+                msg = msg.replace(str(redact), "[REDACTED]")
+        _LOGGER.debug("Updating data via URL: %s", msg)
 
         result = requests.get(url)
         if result.status_code == 404:
