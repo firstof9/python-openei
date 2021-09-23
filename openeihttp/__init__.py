@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import time
 from typing import Any, Dict
 import requests  # type: ignore
 from .const import BASE_URL
@@ -55,9 +56,11 @@ class Rates:
             _LOGGER.error("Missing location data for a plan lookup.")
             raise InvalidCall
 
+        thetime = time.time()
+
         url = f"{BASE_URL}version=latest&format=json"
-        url = f"{url}&api_key={self._api}"
-        url = f"{url}&sector=Residential"
+        url = f"{url}&api_key={self._api}&orderby=startdate"
+        url = f"{url}&sector=Residential&effective_on_date={thetime}"
         if self._radius is not None:
             url = f"{url}&radius={self._radius}"
 
