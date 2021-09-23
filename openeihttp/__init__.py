@@ -78,9 +78,8 @@ class Rates:
         for redact in self._redact:
             if redact:
                 msg = msg.replace(str(redact), "[REDACTED]")
-        msg = msg.replace(
-            f"&lat={self._lat}&lon={self._lon}", "&lat=[REDACTED]&lon=[REDACTED]"
-        )
+        redact_msg = "&lat=[REDACTED]&lon=[REDACTED]"
+        msg = msg.replace(f"&lat={self._lat}&lon={self._lon}", redact_msg)
         _LOGGER.debug("Looking up plans via URL: %s", msg)
 
         result = requests.get(url)
