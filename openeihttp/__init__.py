@@ -53,7 +53,7 @@ class Rates:
             self._api,
             self._address,
         ]
-        self._timestamp = datetime.datetime(1990,1,1,0,0,0)
+        self._timestamp = datetime.datetime(1990, 1, 1, 0, 0, 0)
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
