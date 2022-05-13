@@ -149,7 +149,7 @@ def test_get_rate_data(test_rates, plandata_mock, caplog):
         test_rates.update()
     status = test_rates.current_rate
     assert status == 0.06118
-    assert "No data or missing timestamp, refreshing data." in caplog.text
+    assert "No data populated, refreshing data." in caplog.text
 
 
 @freeze_time("2021-08-13 13:20:00")
