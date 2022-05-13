@@ -1,5 +1,6 @@
 """Test main functions."""
 from freezegun import freeze_time
+import logging
 import pytest
 import openeihttp
 
@@ -142,11 +143,13 @@ def test_get_lookup_data(test_lookup, lookup_mock):
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_rate_data(test_rates, plandata_mock):
+def test_get_rate_data(test_rates, plandata_mock, caplog):
     """Test rate schedules."""
-    test_rates.update()
+    with caplog.at_level(logging.DEBUG):
+        test_rates.update()
     status = test_rates.current_rate
     assert status == 0.06118
+    assert "No data or missing timestamp, refreshing data." in caplog.text
 
 
 @freeze_time("2021-08-13 13:20:00")
