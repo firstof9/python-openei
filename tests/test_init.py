@@ -1,5 +1,6 @@
 """Test main functions."""
 from freezegun import freeze_time
+import datetime
 import logging
 import pytest
 import openeihttp
@@ -870,3 +871,14 @@ def test_mincharge_none(test_rates, plandata_mock):
     test_rates.update()
     status = test_rates.mincharge
     assert status is None
+
+def test_get_rate_data_cache(test_rates, plandata_mock, caplog):
+    """Test rate schedules."""
+    with caplog.at_level(logging.DEBUG):
+        test_rates.update()
+    assert "No data populated, refreshing data." in caplog.text
+    thefuture = datetime.date.today() + datetime.timedelta(days=3)
+    with freeze_time(thefuture):
+        with caplog.at_level(logging.DEBUG):
+            test_rates.update()    
+    assert "Data stale, refreshing from API." in caplog.text

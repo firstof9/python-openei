@@ -114,7 +114,8 @@ class Rates:
             self._timestamp = datetime.datetime.now()
         else:
             elapsedtime = datetime.datetime.now() - self._timestamp
-            if elapsedtime >= 86400:
+            past = datetime.timedelta(hours=24)
+            if elapsedtime >= past:
                 _LOGGER.debug("Data stale, refreshing from API.")
                 self.update_data()
                 self._timestamp = datetime.datetime.now()
