@@ -53,7 +53,7 @@ class Rates:
             self._api,
             self._address,
         ]
-        self._timestamp = None
+        self._timestamp = datetime.datetime(1990,1,1,0,0,0)
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
@@ -108,8 +108,8 @@ class Rates:
 
     def update(self) -> None:
         """Update data only if we need to."""
-        if self._timestamp is None or self._data is None:
-            _LOGGER.debug("No data or missing timestamp, refreshing data.")
+        if self._data is None:
+            _LOGGER.debug("No data populated, refreshing data.")
             self.update_data()
             self._timestamp = datetime.datetime.now()
         else:
