@@ -872,6 +872,7 @@ def test_mincharge_none(test_rates, plandata_mock):
     status = test_rates.mincharge
     assert status is None
 
+
 def test_get_rate_data_cache(test_rates, plandata_mock, caplog):
     """Test rate schedules."""
     with caplog.at_level(logging.DEBUG):
@@ -880,5 +881,5 @@ def test_get_rate_data_cache(test_rates, plandata_mock, caplog):
     thefuture = datetime.date.today() + datetime.timedelta(days=3)
     with freeze_time(thefuture):
         with caplog.at_level(logging.DEBUG):
-            test_rates.update()    
+            test_rates.update()
     assert "Data stale, refreshing from API." in caplog.text
