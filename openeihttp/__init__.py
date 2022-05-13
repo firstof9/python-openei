@@ -53,6 +53,7 @@ class Rates:
             self._api,
             self._address,
         ]
+        self._timestamp = datetime.datetime(1990, 1, 1, 0, 0, 0)
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
@@ -106,6 +107,20 @@ class Rates:
         return rate_names
 
     def update(self) -> None:
+        """Update data only if we need to."""
+        if self._data is None:
+            _LOGGER.debug("No data populated, refreshing data.")
+            self.update_data()
+            self._timestamp = datetime.datetime.now()
+        else:
+            elapsedtime = datetime.datetime.now() - self._timestamp
+            past = datetime.timedelta(hours=24)
+            if elapsedtime >= past:
+                _LOGGER.debug("Data stale, refreshing from API.")
+                self.update_data()
+                self._timestamp = datetime.datetime.now()
+
+    def update_data(self) -> None:
         """Update the data."""
         url = f"{BASE_URL}version=latest&format=json&detail=full"
         url = f"{url}&api_key={self._api}&getpage={self._plan}"
