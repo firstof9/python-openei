@@ -89,15 +89,15 @@ class Rates:
         if result.status_code == 401:
             raise NotAuthorized
 
-        if "error" in result.json().keys():
+        if "error" in result.json():
             message = result.json()["error"]["message"]
             _LOGGER.error("Error: %s", message)
             raise APIError
 
-        if "items" in result.json().keys():
+        if "items" in result.json():
             for item in result.json()["items"]:
                 utility: str = item["utility"]
-                if utility not in rate_names.keys():
+                if utility not in rate_names:
                     rate_names[utility] = []
                 info = {"name": item["name"], "label": item["label"]}
                 rate_names[utility].append(info)
@@ -137,12 +137,12 @@ class Rates:
         if result.status_code == 401:
             raise NotAuthorized
 
-        if "error" in result.json().keys():
+        if "error" in result.json():
             message = result.json()["error"]["message"]
             _LOGGER.error("Error: %s", message)
             raise APIError
 
-        if "items" in result.json().keys():
+        if "items" in result.json():
             data = result.json()["items"][0]
             self._data = data
             _LOGGER.debug("Data updated, results: %s", self._data)
@@ -151,7 +151,7 @@ class Rates:
     def current_rate(self) -> float | None:
         """Return the current rate."""
         assert self._data is not None
-        if "energyratestructure" in self._data.keys():
+        if "energyratestructure" in self._data:
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -167,7 +167,7 @@ class Rates:
                 value = float(self._reading)
                 rate_data = self._data["energyratestructure"][rate_structure]
                 for rate in rate_data:
-                    if "max" in rate.keys() and value < rate["max"]:
+                    if "max" in rate and value < rate["max"]:
                         return rate["rate"]
                     continue
                 return rate_data[-1]["rate"]
@@ -182,7 +182,7 @@ class Rates:
         Requires the monthy accumulative meter reading.
         """
         assert self._data is not None
-        if "energyratestructure" in self._data.keys():
+        if "energyratestructure" in self._data:
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -198,7 +198,7 @@ class Rates:
                 value = float(self._reading)
                 rate_data = self._data["energyratestructure"][rate_structure]
                 for rate in rate_data:
-                    if "max" in rate.keys() and value < (rate["max"] * 29):
+                    if "max" in rate and value < (rate["max"] * 29):
                         return rate["rate"]
                     continue
                 return rate_data[-1]["rate"]
@@ -209,7 +209,7 @@ class Rates:
     def all_rates(self) -> list | None:
         """Return the current rate."""
         assert self._data is not None
-        if "energyratestructure" in self._data.keys():
+        if "energyratestructure" in self._data:
             rates = []
             rate_data = self._data["energyratestructure"]
             for rate in rate_data:
@@ -222,7 +222,7 @@ class Rates:
     def current_demand_rate(self) -> float | None:
         """Return the current rate."""
         assert self._data is not None
-        if "demandratestructure" in self._data.keys():
+        if "demandratestructure" in self._data:
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -245,7 +245,7 @@ class Rates:
     def demand_unit(self) -> str | None:
         """Return the demand rate unit."""
         assert self._data is not None
-        if "demandrateunit" in self._data.keys():
+        if "demandrateunit" in self._data:
             return self._data["demandrateunit"]
         return None
 
@@ -265,7 +265,7 @@ class Rates:
     def distributed_generation(self) -> str | None:
         """Return the distributed generation name."""
         assert self._data is not None
-        if "dgrules" in self._data.keys():
+        if "dgrules" in self._data:
             return self._data["dgrules"]
         return None
 
@@ -273,6 +273,6 @@ class Rates:
     def mincharge(self) -> tuple | None:
         """Return the mincharge."""
         assert self._data is not None
-        if "mincharge" in self._data.keys():
+        if "mincharge" in self._data:
             return (self._data["mincharge"], self._data["minchargeunits"])
         return None
