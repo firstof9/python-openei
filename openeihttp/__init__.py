@@ -176,6 +176,29 @@ class Rates:
         return None
 
     @property
+    def current_adjustment(self) -> float | None:
+        """Return the current rate."""
+        assert self._data is not None
+        if "energyratestructure" in self._data:
+            weekend = False
+            now = datetime.datetime.today()
+            month = now.month - 1
+            hour = now.hour
+            if now.weekday() > 4:
+                weekend = True
+            table = "energyweekdayschedule"
+            if weekend:
+                table = "energyweekendschedule"
+            lookup_table = self._data[table]
+            rate_structure = lookup_table[month][hour]
+            if self._reading:
+                rate_data = self._data["energyratestructure"][rate_structure]
+                return rate_data[-1]["adj"]
+            adj = self._data["energyratestructure"][rate_structure][0]["adj"]
+            return adj
+        return None
+
+    @property
     def monthly_tier_rate(self) -> float | None:
         """Return tier rate.
 
@@ -206,16 +229,18 @@ class Rates:
         return None
 
     @property
-    def all_rates(self) -> list | None:
+    def all_rates(self) -> tuple | None:
         """Return the current rate."""
         assert self._data is not None
         if "energyratestructure" in self._data:
             rates = []
+            adjs = []
             rate_data = self._data["energyratestructure"]
             for rate in rate_data:
                 rates.append(rate[0]["rate"])
+                adjs.append(rate[0]["adj"])
 
-            return rates
+            return rates, adjs
         return None
 
     @property
@@ -239,6 +264,29 @@ class Rates:
             rate = self._data["demandratestructure"][rate_structure][0]["rate"]
 
             return rate
+        return None
+
+    @property
+    def current_demand_adjustment(self) -> float | None:
+        """Return the current rate."""
+        assert self._data is not None
+        if "demandratestructure" in self._data:
+            weekend = False
+            now = datetime.datetime.today()
+            month = now.month - 1
+            hour = now.hour
+            if now.weekday() > 4:
+                weekend = True
+            table = "demandweekdayschedule"
+            if weekend:
+                table = "demandweekendschedule"
+
+            lookup_table = self._data[table]
+            rate_structure = lookup_table[month][hour]
+
+            adj = self._data["demandratestructure"][rate_structure][0]["adj"]
+
+            return adj
         return None
 
     @property
