@@ -158,7 +158,9 @@ def test_get_rate_data_2(test_rates, plandata_mock):
     """Test rate schedules."""
     test_rates.update()
     status = test_rates.current_rate
+    adjustment = test_rates.current_adjustment
     assert status == 0.24477
+    assert adjustment == 0.02824917
 
 
 @freeze_time("2021-08-14 13:20:00")
@@ -166,7 +168,9 @@ def test_get_rate_data_weekend(test_rates, plandata_mock):
     """Test rate schedules."""
     test_rates.update()
     status = test_rates.current_rate
+    adjustment = test_rates.current_adjustment
     assert status == 0.06118
+    assert adjustment == 0.02138383
 
 
 @freeze_time("2021-08-14 13:20:00")
@@ -190,7 +194,9 @@ def test_get_rate_data_2_demand(test_rates, demand_plandata_mock):
     """Test rate schedules."""
     test_rates.update()
     status = test_rates.current_demand_rate
+    adjustment = test_rates.current_demand_adjustment
     assert status == 8.4
+    assert adjustment == 0.838
 
 
 def test_get_demand_unit(test_rates, demand_plandata_mock):
@@ -269,14 +275,17 @@ def test_get_all_rates(test_rates, plandata_mock):
     """Test rate schedules."""
     test_rates.update()
     status = test_rates.all_rates
-    assert status == [0.24477, 0.06118, 0.19847, 0.06116]
+    assert status == (
+        [0.24477, 0.06118, 0.19847, 0.06116],
+        [0.02824917, 0.02138383, 0.02651779, 0.02138308],
+    )
 
 
 def test_get_all_rates_demand(test_rates, demand_plandata_mock):
     """Test rate schedules."""
     test_rates.update()
     status = test_rates.all_rates
-    assert status == [0.07798, 0.11017, 0.1316]
+    assert status == ([0.07798, 0.11017, 0.1316], [0.005741, 0.005741, 0.005741])
 
 
 def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius, caplog):
