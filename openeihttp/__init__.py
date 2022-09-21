@@ -180,6 +180,7 @@ class Rates:
         """Return the current rate."""
         assert self._data is not None
         if "energyratestructure" in self._data:
+            adj = None
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -193,8 +194,10 @@ class Rates:
             rate_structure = lookup_table[month][hour]
             if self._reading:
                 rate_data = self._data["energyratestructure"][rate_structure]
-                return rate_data[-1]["adj"]
-            adj = self._data["energyratestructure"][rate_structure][0]["adj"]
+                if "adj" in rate_data[-1]:
+                    return rate_data[-1]["adj"]
+            if "adj" in self._data["energyratestructure"][rate_structure][0]:
+                adj = self._data["energyratestructure"][rate_structure][0]["adj"]
             return adj
         return None
 
