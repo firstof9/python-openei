@@ -275,6 +275,7 @@ class Rates:
         """Return the current rate."""
         assert self._data is not None
         if "demandratestructure" in self._data:
+            adj = None
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -288,8 +289,9 @@ class Rates:
             lookup_table = self._data[table]
             rate_structure = lookup_table[month][hour]
 
-            adj = self._data["demandratestructure"][rate_structure][0]["adj"]
-
+            adj_data = self._data["demandratestructure"][rate_structure][0]
+            if "adj" in adj_data:
+                adj = adj_data["adj"]
             return adj
         return None
 
