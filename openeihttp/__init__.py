@@ -83,7 +83,7 @@ class Rates:
         msg = msg.replace(f"&lat={self._lat}&lon={self._lon}", redact_msg)
         _LOGGER.debug("Looking up plans via URL: %s", msg)
 
-        result = requests.get(url)
+        result = requests.get(url, timeout=90)
         if result.status_code == 404:
             raise UrlNotFound
         if result.status_code == 401:
@@ -131,7 +131,7 @@ class Rates:
                 msg = msg.replace(str(redact), "[REDACTED]")
         _LOGGER.debug("Updating data via URL: %s", msg)
 
-        result = requests.get(url)
+        result = requests.get(url, timeout=90)
         if result.status_code == 404:
             raise UrlNotFound
         if result.status_code == 401:
@@ -196,8 +196,9 @@ class Rates:
                 rate_data = self._data["energyratestructure"][rate_structure]
                 if "adj" in rate_data[-1]:
                     return rate_data[-1]["adj"]
-            if "adj" in self._data["energyratestructure"][rate_structure][0]:
-                adj = self._data["energyratestructure"][rate_structure][0]["adj"]
+            adj_data = self._data["energyratestructure"][rate_structure][0]
+            if "adj" in adj_data:
+                adj = adj_data["adj"]
             return adj
         return None
 
