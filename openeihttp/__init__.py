@@ -83,7 +83,7 @@ class Rates:
         msg = msg.replace(f"&lat={self._lat}&lon={self._lon}", redact_msg)
         _LOGGER.debug("Looking up plans via URL: %s", msg)
 
-        result = requests.get(url)
+        result = requests.get(url, timeout=90)
         if result.status_code == 404:
             raise UrlNotFound
         if result.status_code == 401:
@@ -131,7 +131,7 @@ class Rates:
                 msg = msg.replace(str(redact), "[REDACTED]")
         _LOGGER.debug("Updating data via URL: %s", msg)
 
-        result = requests.get(url)
+        result = requests.get(url, timeout=90)
         if result.status_code == 404:
             raise UrlNotFound
         if result.status_code == 401:
@@ -180,6 +180,7 @@ class Rates:
         """Return the current rate."""
         assert self._data is not None
         if "energyratestructure" in self._data:
+            adj = None
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -193,8 +194,11 @@ class Rates:
             rate_structure = lookup_table[month][hour]
             if self._reading:
                 rate_data = self._data["energyratestructure"][rate_structure]
-                return rate_data[-1]["adj"]
-            adj = self._data["energyratestructure"][rate_structure][0]["adj"]
+                if "adj" in rate_data[-1]:
+                    return rate_data[-1]["adj"]
+            adj_data = self._data["energyratestructure"][rate_structure][0]
+            if "adj" in adj_data:
+                adj = adj_data["adj"]
             return adj
         return None
 
@@ -271,6 +275,7 @@ class Rates:
         """Return the current rate."""
         assert self._data is not None
         if "demandratestructure" in self._data:
+            adj = None
             weekend = False
             now = datetime.datetime.today()
             month = now.month - 1
@@ -284,8 +289,9 @@ class Rates:
             lookup_table = self._data[table]
             rate_structure = lookup_table[month][hour]
 
-            adj = self._data["demandratestructure"][rate_structure][0]["adj"]
-
+            adj_data = self._data["demandratestructure"][rate_structure][0]
+            if "adj" in adj_data:
+                adj = adj_data["adj"]
             return adj
         return None
 
