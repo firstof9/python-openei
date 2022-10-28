@@ -220,3 +220,12 @@ def mock_lookup_api_err(requests_mock):
         "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
         text=load_fixture("api_error.json"),
     )
+
+
+@pytest.fixture(name="mock_rate_limit_err")
+def mock_rate_limit(requests_mock):
+    """Mock the status reply."""
+    requests_mock.get(
+        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
+        text=load_fixture("rate_limit.json"),
+    )

@@ -271,6 +271,16 @@ def test_get_lookup_data_api_err(test_lookup, lookup_mock_api_err, caplog):
         )
 
 
+def test_rate_limit_err(test_rates, mock_rate_limit_err, caplog):
+    """Test rate schedules."""
+    with pytest.raises(openeihttp.RateLimit):
+        test_rates.update()
+        assert (
+            "You have exceeded your rate limit. Try again later or contact us at https://api.openei.org:443/contact/ for assistance"
+            in caplog.text
+        )
+
+
 def test_get_all_rates(test_rates, plandata_mock):
     """Test rate schedules."""
     test_rates.update()
