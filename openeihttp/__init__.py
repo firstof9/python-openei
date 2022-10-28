@@ -23,6 +23,10 @@ class APIError(Exception):
     """Exception for API errors."""
 
 
+class RateLimit(Exception):
+    """Exception for API errors."""
+
+
 class InvalidCall(Exception):
     """Exception for invalid library calls."""
 
@@ -140,6 +144,8 @@ class Rates:
         if "error" in result.json():
             message = result.json()["error"]["message"]
             _LOGGER.error("Error: %s", message)
+            if "You have exceeded your rate limit." in message:
+                raise RateLimit
             raise APIError
 
         if "items" in result.json():
