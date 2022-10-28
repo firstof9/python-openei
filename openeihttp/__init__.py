@@ -22,8 +22,10 @@ class NotAuthorized(Exception):
 class APIError(Exception):
     """Exception for API errors."""
 
+
 class RateLimit(Exception):
-    """Exception for API errors."""   
+    """Exception for API errors."""
+
 
 class InvalidCall(Exception):
     """Exception for invalid library calls."""

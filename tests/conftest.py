@@ -221,6 +221,7 @@ def mock_lookup_api_err(requests_mock):
         text=load_fixture("api_error.json"),
     )
 
+
 @pytest.fixture(name="mock_rate_limit_err")
 def mock_rate_limit(requests_mock):
     """Mock the status reply."""
