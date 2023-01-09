@@ -37,12 +37,12 @@ class Rates:
     def __init__(
         self,
         api: str,
-        lat: float = None,
-        lon: float = None,
-        plan: str = None,
-        radius: float = None,
-        address: str = None,
-        reading: float = None,
+        lat: float = "0.0",
+        lon: float = "0.0",
+        plan: str = "",
+        radius: float = "0.0",
+        address: str = "",
+        reading: float = "0.0",
     ) -> None:
         """Initialize."""
         self._api = api
