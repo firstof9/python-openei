@@ -37,12 +37,12 @@ class Rates:
     def __init__(
         self,
         api: str,
-        lat: float = None,
-        lon: float = None,
-        plan: str = None,
-        radius: float = None,
-        address: str = None,
-        reading: float = None,
+        lat: float = 9000,
+        lon: float = 9000,
+        plan: str = "",
+        radius: float = 0.0,
+        address: str = "",
+        reading: float = 0.0,
     ) -> None:
         """Initialize."""
         self._api = api
@@ -61,7 +61,7 @@ class Rates:
 
     def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
-        if not any([self._address, self._lat, self._lon]):
+        if self._address == "" and (self._lat == 9000 and self._lon == 9000):
             _LOGGER.error("Missing location data for a plan lookup.")
             raise InvalidCall
 
@@ -70,10 +70,10 @@ class Rates:
         url = f"{BASE_URL}version=latest&format=json"
         url = f"{url}&api_key={self._api}&orderby=startdate"
         url = f"{url}&sector=Residential&effective_on_date={thetime}"
-        if self._radius is not None:
+        if self._radius != 0.0:
             url = f"{url}&radius={self._radius}"
 
-        if self._address is None:
+        if self._address == "":
             url = f"{url}&lat={self._lat}&lon={self._lon}"
         else:
             url = f"{url}&address={self._address}"
@@ -248,7 +248,8 @@ class Rates:
             rate_data = self._data["energyratestructure"]
             for rate in rate_data:
                 rates.append(rate[0]["rate"])
-                adjs.append(rate[0]["adj"])
+                if "adj" in rate[0]:
+                    adjs.append(rate[0]["adj"])
 
             return rates, adjs
         return None
