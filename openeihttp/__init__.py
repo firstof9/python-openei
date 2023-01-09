@@ -70,10 +70,10 @@ class Rates:
         url = f"{BASE_URL}version=latest&format=json"
         url = f"{url}&api_key={self._api}&orderby=startdate"
         url = f"{url}&sector=Residential&effective_on_date={thetime}"
-        if self._radius is not "0.0":
+        if self._radius != "0.0":
             url = f"{url}&radius={self._radius}"
 
-        if self._address is "":
+        if self._address == "":
             url = f"{url}&lat={self._lat}&lon={self._lon}"
         else:
             url = f"{url}&address={self._address}"
