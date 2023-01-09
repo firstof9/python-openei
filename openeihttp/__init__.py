@@ -248,7 +248,8 @@ class Rates:
             rate_data = self._data["energyratestructure"]
             for rate in rate_data:
                 rates.append(rate[0]["rate"])
-                adjs.append(rate[0]["adj"])
+                if "adj" in rate[0]:
+                    adjs.append(rate[0]["adj"])
 
             return rates, adjs
         return None
