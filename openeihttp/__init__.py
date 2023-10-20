@@ -156,7 +156,7 @@ class Rates:
     @property
     def current_rate(self) -> float | None:
         """Return the current rate."""
-        self.rate(datetime.datetime.today())
+        return self.rate(datetime.datetime.today())
 
     def rate(self, date) -> float | None:
         """Return the rate for a specific date."""
@@ -187,7 +187,7 @@ class Rates:
     @property
     def current_adjustment(self) -> float | None:
         """Return the current rate."""
-        self.adjustment(datetime.datetime.today())
+        return self.adjustment(datetime.datetime.today())
 
     def adjustment(self, date) -> float | None:
         """Return the rate for a specific date."""
@@ -220,8 +220,7 @@ class Rates:
 
         Requires the monthy accumulative meter reading.
         """
-        self.tier_rate_for_month(datetime.datetime.today())
-
+        return self.tier_rate_for_month(datetime.datetime.today())
 
     def tier_rate_for_month(self, date) -> float | None:
         """Return tier rate for a specific month.
@@ -270,7 +269,7 @@ class Rates:
     @property
     def current_demand_rate(self) -> float | None:
         """Return the current rate."""
-        self.demand_rate(self, datetime.datetime.today())
+        return self.demand_rate(datetime.datetime.today())
 
     def demand_rate(self, date) -> float | None:
         """Return the rate for a specific date."""
@@ -296,7 +295,7 @@ class Rates:
     @property
     def current_demand_adjustment(self) -> float | None:
         """Return the current rate."""
-        self.demand_adjustment(datetime.datetime.today())
+        return self.demand_adjustment(datetime.datetime.today())
 
     def demand_adjustment(self, date) -> float | None:
         """Return the rate for a specific date."""
