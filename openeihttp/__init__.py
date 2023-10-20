@@ -190,6 +190,7 @@ class Rates:
         self.adjustment(datetime.datetime.today())
 
     def adjustment(self, date) -> float | None:
+        """Return the rate for a specific date."""
         assert self._data is not None
         if "energyratestructure" in self._data:
             adj = None
@@ -298,7 +299,7 @@ class Rates:
         self.demand_adjustment(datetime.datetime.today())
 
     def demand_adjustment(self, date) -> float | None:
-        """Return the current rate."""
+        """Return the rate for a specific date."""
         assert self._data is not None
         if "demandratestructure" in self._data:
             adj = None
