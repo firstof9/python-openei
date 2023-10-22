@@ -156,13 +156,16 @@ class Rates:
     @property
     def current_rate(self) -> float | None:
         """Return the current rate."""
+        return self.rate(datetime.datetime.today())
+
+    def rate(self, date) -> float | None:
+        """Return the rate for a specific date."""
         assert self._data is not None
         if "energyratestructure" in self._data:
             weekend = False
-            now = datetime.datetime.today()
-            month = now.month - 1
-            hour = now.hour
-            if now.weekday() > 4:
+            month = date.month - 1
+            hour = date.hour
+            if date.weekday() > 4:
                 weekend = True
             table = "energyweekdayschedule"
             if weekend:
@@ -184,14 +187,17 @@ class Rates:
     @property
     def current_adjustment(self) -> float | None:
         """Return the current rate."""
+        return self.adjustment(datetime.datetime.today())
+
+    def adjustment(self, date) -> float | None:
+        """Return the rate for a specific date."""
         assert self._data is not None
         if "energyratestructure" in self._data:
             adj = None
             weekend = False
-            now = datetime.datetime.today()
-            month = now.month - 1
-            hour = now.hour
-            if now.weekday() > 4:
+            month = date.month - 1
+            hour = date.hour
+            if date.weekday() > 4:
                 weekend = True
             table = "energyweekdayschedule"
             if weekend:
@@ -214,13 +220,19 @@ class Rates:
 
         Requires the monthy accumulative meter reading.
         """
+        return self.tier_rate_for_month(datetime.datetime.today())
+
+    def tier_rate_for_month(self, date) -> float | None:
+        """Return tier rate for a specific month.
+
+        Requires the monthy accumulative meter reading.
+        """
         assert self._data is not None
         if "energyratestructure" in self._data:
             weekend = False
-            now = datetime.datetime.today()
-            month = now.month - 1
-            hour = now.hour
-            if now.weekday() > 4:
+            month = date.month - 1
+            hour = date.hour
+            if date.weekday() > 4:
                 weekend = True
             table = "energyweekdayschedule"
             if weekend:
@@ -257,13 +269,16 @@ class Rates:
     @property
     def current_demand_rate(self) -> float | None:
         """Return the current rate."""
+        return self.demand_rate(datetime.datetime.today())
+
+    def demand_rate(self, date) -> float | None:
+        """Return the rate for a specific date."""
         assert self._data is not None
         if "demandratestructure" in self._data:
             weekend = False
-            now = datetime.datetime.today()
-            month = now.month - 1
-            hour = now.hour
-            if now.weekday() > 4:
+            month = date.month - 1
+            hour = date.hour
+            if date.weekday() > 4:
                 weekend = True
             table = "demandweekdayschedule"
             if weekend:
@@ -280,14 +295,17 @@ class Rates:
     @property
     def current_demand_adjustment(self) -> float | None:
         """Return the current rate."""
+        return self.demand_adjustment(datetime.datetime.today())
+
+    def demand_adjustment(self, date) -> float | None:
+        """Return the rate for a specific date."""
         assert self._data is not None
         if "demandratestructure" in self._data:
             adj = None
             weekend = False
-            now = datetime.datetime.today()
-            month = now.month - 1
-            hour = now.hour
-            if now.weekday() > 4:
+            month = date.month - 1
+            hour = date.hour
+            if date.weekday() > 4:
                 weekend = True
             table = "demandweekdayschedule"
             if weekend:
