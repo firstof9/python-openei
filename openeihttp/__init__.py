@@ -1,4 +1,5 @@
 """Provide a package for python-openei."""
+
 from __future__ import annotations
 
 import datetime
