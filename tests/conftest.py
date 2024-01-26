@@ -1,4 +1,5 @@
 """Provide common pytest fixtures."""
+
 import pytest
 
 import openeihttp

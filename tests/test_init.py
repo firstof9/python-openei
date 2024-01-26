@@ -1,4 +1,5 @@
 """Test main functions."""
+
 from freezegun import freeze_time
 import datetime
 import logging
