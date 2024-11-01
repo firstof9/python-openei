@@ -663,8 +663,22 @@ def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius, caplog):
 def test_get_tier_rate_data_low(test_lookup_tier_low, tier_plandata_mock):
     """Test rate schedules."""
     test_lookup_tier_low.update()
-    status = test_lookup_tier_low.current_rate
-    assert status == 0.25902
+    rate = test_lookup_tier_low.current_rate
+    struture = test_lookup_tier_low.current_energy_rate_structure
+    assert rate == 0.25902
+    assert struture == 0
+
+
+@freeze_time(
+    "2021-11-01 10:21:34"
+)  # November 1 is the first day of a separate rate structure for this plan
+def test_get_tier_rate_data_low_second_period(test_lookup_tier_low, tier_plandata_mock):
+    """Test rate schedules."""
+    test_lookup_tier_low.update()
+    rate = test_lookup_tier_low.current_rate
+    structure = test_lookup_tier_low.current_energy_rate_structure
+    assert rate == 0.25902
+    assert structure == 1
 
 
 @freeze_time("2021-08-13 10:21:34")
