@@ -35,7 +35,7 @@ class InvalidCall(Exception):
 class Rates:
     """Represent OpenEI Rates."""
 
-    def __init__(
+    def __init__( # pylint: disable-next=too-many-positional-arguments
         self,
         api: str,
         lat: float = 9000,
