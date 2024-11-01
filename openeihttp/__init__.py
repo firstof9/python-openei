@@ -32,10 +32,11 @@ class InvalidCall(Exception):
     """Exception for invalid library calls."""
 
 
+# pylint: disable-next=too-many-positional-arguments
 class Rates:
     """Represent OpenEI Rates."""
 
-    def __init__(  # pylint: disable-next=too-many-positional-arguments
+    def __init__(
         self,
         api: str,
         lat: float = 9000,
