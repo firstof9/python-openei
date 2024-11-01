@@ -32,6 +32,7 @@ class InvalidCall(Exception):
     """Exception for invalid library calls."""
 
 
+# pylint: disable=too-many-positional-arguments
 class Rates:
     """Represent OpenEI Rates."""
 
