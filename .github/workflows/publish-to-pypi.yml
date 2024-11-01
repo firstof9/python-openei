@@ -1,8 +1,9 @@
 name: Publish releases to PyPI
 
 on:
+  workflow_dispatch:
   release:
-    types: [published, prereleased, workflow_dispatch]
+    types: [published, prereleased]
 
 jobs:
   build-and-publish:
