@@ -156,6 +156,30 @@ class Rates:
             _LOGGER.debug("Data updated, results: %s", self._data)
 
     @property
+    def current_energy_rate_structure(self) -> int | None:
+        """Return the current rate structure."""
+        return self.rate_structure(datetime.datetime.today(), "energy")
+
+    def rate_structure(self, date, rate_type) -> int | None:
+        """Return the rate structure for a specific date."""
+        assert self._data is not None
+        if f"{rate_type}ratestructure" in self._data:
+            month = date.month - 1
+            hour = date.hour
+            weekend = date.weekday() > 4
+
+            table = (
+                f"{rate_type}weekendschedule"
+                if weekend
+                else f"{rate_type}weekdayschedule"
+            )
+            lookup_table = self._data[table]
+            rate_structure = lookup_table[month][hour]
+
+            return rate_structure
+        return None
+
+    @property
     def current_rate(self) -> float | None:
         """Return the current rate."""
         return self.rate(datetime.datetime.today())
@@ -163,17 +187,8 @@ class Rates:
     def rate(self, date) -> float | None:
         """Return the rate for a specific date."""
         assert self._data is not None
-        if "energyratestructure" in self._data:
-            weekend = False
-            month = date.month - 1
-            hour = date.hour
-            if date.weekday() > 4:
-                weekend = True
-            table = "energyweekdayschedule"
-            if weekend:
-                table = "energyweekendschedule"
-            lookup_table = self._data[table]
-            rate_structure = lookup_table[month][hour]
+        rate_structure = self.rate_structure(date, "energy")
+        if rate_structure is not None:
             if self._reading:
                 value = float(self._reading)
                 rate_data = self._data["energyratestructure"][rate_structure]
@@ -194,18 +209,9 @@ class Rates:
     def adjustment(self, date) -> float | None:
         """Return the rate for a specific date."""
         assert self._data is not None
-        if "energyratestructure" in self._data:
+        rate_structure = self.rate_structure(date, "energy")
+        if rate_structure is not None:
             adj = None
-            weekend = False
-            month = date.month - 1
-            hour = date.hour
-            if date.weekday() > 4:
-                weekend = True
-            table = "energyweekdayschedule"
-            if weekend:
-                table = "energyweekendschedule"
-            lookup_table = self._data[table]
-            rate_structure = lookup_table[month][hour]
             if self._reading:
                 rate_data = self._data["energyratestructure"][rate_structure]
                 if "adj" in rate_data[-1]:
@@ -230,17 +236,8 @@ class Rates:
         Requires the monthy accumulative meter reading.
         """
         assert self._data is not None
-        if "energyratestructure" in self._data:
-            weekend = False
-            month = date.month - 1
-            hour = date.hour
-            if date.weekday() > 4:
-                weekend = True
-            table = "energyweekdayschedule"
-            if weekend:
-                table = "energyweekendschedule"
-            lookup_table = self._data[table]
-            rate_structure = lookup_table[month][hour]
+        rate_structure = self.rate_structure(date, "energy")
+        if rate_structure is not None:
             if self._reading:
                 value = float(self._reading)
                 rate_data = self._data["energyratestructure"][rate_structure]
@@ -276,21 +273,9 @@ class Rates:
     def demand_rate(self, date) -> float | None:
         """Return the rate for a specific date."""
         assert self._data is not None
-        if "demandratestructure" in self._data:
-            weekend = False
-            month = date.month - 1
-            hour = date.hour
-            if date.weekday() > 4:
-                weekend = True
-            table = "demandweekdayschedule"
-            if weekend:
-                table = "demandweekendschedule"
-
-            lookup_table = self._data[table]
-            rate_structure = lookup_table[month][hour]
-
+        rate_structure = self.rate_structure(date, "demand")
+        if rate_structure is not None:
             rate = self._data["demandratestructure"][rate_structure][0]["rate"]
-
             return rate
         return None
 
@@ -302,19 +287,9 @@ class Rates:
     def demand_adjustment(self, date) -> float | None:
         """Return the rate for a specific date."""
         assert self._data is not None
-        if "demandratestructure" in self._data:
+        rate_structure = self.rate_structure(date, "demand")
+        if rate_structure is not None:
             adj = None
-            weekend = False
-            month = date.month - 1
-            hour = date.hour
-            if date.weekday() > 4:
-                weekend = True
-            table = "demandweekdayschedule"
-            if weekend:
-                table = "demandweekendschedule"
-
-            lookup_table = self._data[table]
-            rate_structure = lookup_table[month][hour]
 
             adj_data = self._data["demandratestructure"][rate_structure][0]
             if "adj" in adj_data:
