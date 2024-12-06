@@ -1,17 +1,31 @@
 """Test main functions."""
 
-from freezegun import freeze_time
 import datetime
 import logging
+import re
+
 import pytest
+from freezegun import freeze_time
+
 import openeihttp
-
 from openeihttp import InvalidCall
+from tests.common import load_fixture
+
+pytestmark = pytest.mark.asyncio
+
+TEST_URL = "https://api.openei.org/utility_rates"
+TEST_PATTERN = r"^https://api\.openei\.org/utility_rates\?.*$"
 
 
-def test_get_lookup_data(test_lookup, lookup_mock):
+async def test_get_lookup_data(mock_aioclient):
     """Test v4 Status reply"""
-    status = test_lookup.lookup_plans()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("lookup.json"),
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+    status = await test_lookup.lookup_plans()
     assert status == {
         "Arizona Public Service Co": [
             {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
@@ -145,19 +159,36 @@ def test_get_lookup_data(test_lookup, lookup_mock):
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_rate_data(test_rates, plandata_mock, caplog):
+async def test_get_rate_data(mock_aioclient, caplog):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+        repeat=True,
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
     with caplog.at_level(logging.DEBUG):
-        test_rates.update()
+        await test_rates.update()
     status = test_rates.current_rate
     assert status == 0.06118
     assert "No data populated, refreshing data." in caplog.text
 
 
 @freeze_time("2021-08-13 13:20:00")
-def test_get_rate_data_2(test_rates, plandata_mock):
+async def test_get_rate_data_2(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.current_rate
     adjustment = test_rates.current_adjustment
     assert status == 0.24477
@@ -165,9 +196,17 @@ def test_get_rate_data_2(test_rates, plandata_mock):
 
 
 @freeze_time("2021-08-14 13:20:00")
-def test_get_rate_data_weekend(test_rates, plandata_mock):
+async def test_get_rate_data_weekend(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.current_rate
     adjustment = test_rates.current_adjustment
     assert status == 0.06118
@@ -175,116 +214,230 @@ def test_get_rate_data_weekend(test_rates, plandata_mock):
 
 
 @freeze_time("2021-08-14 13:20:00")
-def test_get_rate_data_weekend_demand(test_rates, demand_plandata_mock):
+async def test_get_rate_data_weekend_demand(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_demand_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.current_demand_rate
     assert status == 0
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_rate_data_demand(test_rates, demand_plandata_mock):
+async def test_get_rate_data_demand(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_demand_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.current_demand_rate
     assert status == 0
 
 
 @freeze_time("2021-08-13 17:20:00")
-def test_get_rate_data_2_demand(test_rates, demand_plandata_mock):
+async def test_get_rate_data_2_demand(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_demand_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.current_demand_rate
     adjustment = test_rates.current_demand_adjustment
     assert status == 8.4
     assert adjustment == 0.838
 
 
-def test_get_demand_unit(test_rates, demand_plandata_mock):
+async def test_get_demand_unit(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_demand_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.demand_unit
     assert status == "kW"
 
 
-def test_get_distributed_generation(test_rates, plandata_mock):
+async def test_get_distributed_generation(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.distributed_generation
     assert status == "Net Metering"
 
 
-def test_get_aproval(test_rates, plandata_mock):
+async def test_get_aproval(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.approval
     assert status
 
 
-def test_get_name(test_rates, plandata_mock):
+async def test_get_name(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.rate_name
     assert status == "Residential Service TOU Time Advantage 7PM-Noon (ET-2)"
 
 
-def test_get_lookup_data_404(test_lookup, lookup_mock_404):
+async def test_get_lookup_data_404(mock_aioclient):
     """Test lookup error 404"""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=404,
+        body="",
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
     with pytest.raises(openeihttp.UrlNotFound):
-        test_lookup.lookup_plans()
+        await test_lookup.lookup_plans()
 
 
-def test_get_lookup_data_401(test_lookup, lookup_mock_401):
+async def test_get_lookup_data_401(mock_aioclient):
     """Test lookup error 401"""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=401,
+        body="",
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
     with pytest.raises(openeihttp.NotAuthorized):
-        test_lookup.lookup_plans()
+        await test_lookup.lookup_plans()
 
 
-def test_get_plan_data_404(test_rates, plandata_mock_404):
+async def test_get_plan_data_404(mock_aioclient):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=404,
+        body="",
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
     with pytest.raises(openeihttp.UrlNotFound):
-        test_rates.update()
+        await test_rates.update()
 
 
-def test_get_plan_data_401(test_rates, plandata_mock_401):
+async def test_get_plan_data_401(mock_aioclient):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=401,
+        body="",
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
     with pytest.raises(openeihttp.NotAuthorized):
-        test_rates.update()
+        await test_rates.update()
 
 
-def test_get_plan_data_api_err(test_rates, plandata_mock_api_err, caplog):
+async def test_get_plan_data_api_err(mock_aioclient, caplog):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("api_error.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
     with pytest.raises(openeihttp.APIError):
-        test_rates.update()
+        await test_rates.update()
         assert (
             "No api_key was supplied. Get one at https://api.openei.org:443"
             in caplog.text
         )
 
 
-def test_get_lookup_data_api_err(test_lookup, lookup_mock_api_err, caplog):
+async def test_get_lookup_data_api_err(mock_aioclient, caplog):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("api_error.json"),
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
     with pytest.raises(openeihttp.APIError):
-        test_lookup.lookup_plans()
+        await test_lookup.lookup_plans()
         assert (
             "No api_key was supplied. Get one at https://api.openei.org:443"
             in caplog.text
         )
 
 
-def test_rate_limit_err(test_rates, mock_rate_limit_err, caplog):
+async def test_rate_limit_err(mock_aioclient, caplog):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("rate_limit.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
     with pytest.raises(openeihttp.RateLimit):
-        test_rates.update()
+        await test_rates.update()
         assert (
             "You have exceeded your rate limit. Try again later or contact us at https://api.openei.org:443/contact/ for assistance"
             in caplog.text
         )
 
 
-def test_get_all_rates(test_rates, plandata_mock):
+async def test_get_all_rates(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.all_rates
     assert status == (
         [0.24477, 0.06118, 0.19847, 0.06116],
@@ -292,16 +445,29 @@ def test_get_all_rates(test_rates, plandata_mock):
     )
 
 
-def test_get_all_rates_demand(test_rates, demand_plandata_mock):
+async def test_get_all_rates_demand(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_demand_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.all_rates
     assert status == ([0.07798, 0.11017, 0.1316], [0.005741, 0.005741, 0.005741])
 
 
-def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius, caplog):
+async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient, caplog):
     """Test v4 Status reply"""
-    status = test_lookup_radius.lookup_plans()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("lookup_radius.json"),
+    )
+    status = await test_lookup_radius.lookup_plans()
     assert status == {
         "Arizona Public Service Co": [
             {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
@@ -660,9 +826,14 @@ def test_get_lookup_data_radius(test_lookup_radius, lookup_mock_radius, caplog):
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_tier_rate_data_low(test_lookup_tier_low, tier_plandata_mock):
+async def test_get_tier_rate_data_low(test_lookup_tier_low, mock_aioclient):
     """Test rate schedules."""
-    test_lookup_tier_low.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_low.update()
     rate = test_lookup_tier_low.current_rate
     struture = test_lookup_tier_low.current_energy_rate_structure
     assert rate == 0.25902
@@ -672,9 +843,16 @@ def test_get_tier_rate_data_low(test_lookup_tier_low, tier_plandata_mock):
 @freeze_time(
     "2021-11-01 10:21:34"
 )  # November 1 is the first day of a separate rate structure for this plan
-def test_get_tier_rate_data_low_second_period(test_lookup_tier_low, tier_plandata_mock):
+async def test_get_tier_rate_data_low_second_period(
+    test_lookup_tier_low, mock_aioclient
+):
     """Test rate schedules."""
-    test_lookup_tier_low.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_low.update()
     rate = test_lookup_tier_low.current_rate
     structure = test_lookup_tier_low.current_energy_rate_structure
     assert rate == 0.25902
@@ -682,70 +860,110 @@ def test_get_tier_rate_data_low_second_period(test_lookup_tier_low, tier_plandat
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_tier_rate_data_med(test_lookup_tier_med, tier_plandata_mock):
+async def test_get_tier_rate_data_med(test_lookup_tier_med, mock_aioclient):
     """Test rate schedules."""
-    test_lookup_tier_med.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_med.update()
     status = test_lookup_tier_med.current_rate
     assert status == 0.32596
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_tier_rate_data_high(test_lookup_tier_high, tier_plandata_mock):
+async def test_get_tier_rate_data_high(test_lookup_tier_high, mock_aioclient):
     """Test rate schedules."""
-    test_lookup_tier_high.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_high.update()
     status = test_lookup_tier_high.current_rate
     assert status == 0.40745
 
 
 @freeze_time("2021-08-13 13:20:00")
-def test_get_tier_rate_data_2(test_lookup_tier_low, tier_plandata_mock):
+async def test_get_tier_rate_data_2(test_lookup_tier_low, mock_aioclient):
     """Test rate schedules."""
-    test_lookup_tier_low.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_low.update()
     status = test_lookup_tier_low.current_rate
     assert status == 0.25902
 
 
 @freeze_time("2021-08-14 13:20:00")
-def test_get_tier_rate_data_weekend(test_lookup_tier_low, tier_plandata_mock):
+async def test_get_tier_rate_data_weekend(test_lookup_tier_low, mock_aioclient):
     """Test rate schedules."""
-    test_lookup_tier_low.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_low.update()
     status = test_lookup_tier_low.current_rate
     assert status == 0.25902
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_monthly_tier_rate_data_low(
-    test_lookup_monthly_tier_low, tier_plandata_mock
+async def test_get_monthly_tier_rate_data_low(
+    test_lookup_monthly_tier_low, mock_aioclient
 ):
     """Test rate schedules."""
-    test_lookup_monthly_tier_low.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_monthly_tier_low.update()
     status = test_lookup_monthly_tier_low.monthly_tier_rate
     assert status == 0.25902
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_monthly_tier_rate_data_med(
-    test_lookup_monthly_tier_med, tier_plandata_mock
+async def test_get_monthly_tier_rate_data_med(
+    test_lookup_monthly_tier_med, mock_aioclient
 ):
     """Test rate schedules."""
-    test_lookup_monthly_tier_med.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_monthly_tier_med.update()
     status = test_lookup_monthly_tier_med.monthly_tier_rate
     assert status == 0.32596
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_monthly_tier_rate_data_high(
-    test_lookup_monthly_tier_high, tier_plandata_mock
+async def test_get_monthly_tier_rate_data_high(
+    test_lookup_monthly_tier_high, mock_aioclient
 ):
     """Test rate schedules."""
-    test_lookup_monthly_tier_high.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_monthly_tier_high.update()
     status = test_lookup_monthly_tier_high.monthly_tier_rate
     assert status == 0.40745
 
 
-def test_get_lookup_data_with_address(test_lookup_address, lookup_mock_address):
+async def test_get_lookup_data_with_address(test_lookup_address, mock_aioclient):
     """Test v4 Status reply"""
-    status = test_lookup_address.lookup_plans()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("lookup.json"),
+    )
+    status = await test_lookup_address.lookup_plans()
     assert status == {
         "Arizona Public Service Co": [
             {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
@@ -879,41 +1097,68 @@ def test_get_lookup_data_with_address(test_lookup_address, lookup_mock_address):
 
 
 @freeze_time("2021-08-13 10:21:34")
-def test_get_rate_data_address(test_rates_address, plandata_mock_address):
+async def test_get_rate_data_address(test_rates_address, mock_aioclient):
     """Test rate schedules."""
-    test_rates_address.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    await test_rates_address.update()
     status = test_rates_address.current_rate
     assert status == 0.06118
 
 
-def test_missing_loc(test_lookup_missing_loc, caplog):
+async def test_missing_loc(test_lookup_missing_loc, caplog):
     """Missing API key check."""
     with pytest.raises(InvalidCall):
-        test_lookup_missing_loc.lookup_plans()
+        await test_lookup_missing_loc.lookup_plans()
         assert "Missing location data for a plan lookup." in caplog.text
 
 
-def test_mincharge(test_lookup_tier_low, tier_plandata_mock):
+async def test_mincharge(test_lookup_tier_low, mock_aioclient):
     """Test rate schedules."""
-    test_lookup_tier_low.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    await test_lookup_tier_low.update()
     status = test_lookup_tier_low.mincharge
     assert status == (10, "$/month")
 
 
-def test_mincharge_none(test_rates, plandata_mock):
+async def test_mincharge_none(mock_aioclient):
     """Test rate schedules."""
-    test_rates.update()
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.update()
     status = test_rates.mincharge
     assert status is None
 
 
-def test_get_rate_data_cache(test_rates, plandata_mock, caplog):
+async def test_get_rate_data_cache(mock_aioclient, caplog):
     """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+        repeat=True,
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
     with caplog.at_level(logging.DEBUG):
-        test_rates.update()
+        await test_rates.update()
     assert "No data populated, refreshing data." in caplog.text
     thefuture = datetime.date.today() + datetime.timedelta(days=3)
     with freeze_time(thefuture):
         with caplog.at_level(logging.DEBUG):
-            test_rates.update()
+            await test_rates.update()
     assert "Data stale, refreshing from API." in caplog.text

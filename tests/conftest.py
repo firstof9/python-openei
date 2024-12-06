@@ -1,9 +1,18 @@
 """Provide common pytest fixtures."""
 
 import pytest
+from aioresponses import aioresponses
 
 import openeihttp
-from tests.common import load_fixture
+
+pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+def mock_aioclient():
+    """Fixture to mock aioclient calls."""
+    with aioresponses() as m:
+        yield m
 
 
 @pytest.fixture(name="test_lookup")
@@ -103,130 +112,4 @@ def test_rates_address():
     """Load the charger data."""
     return openeihttp.Rates(
         api="fakeAPIKey", address="12345", plan="574613aa5457a3557e906f5b"
-    )
-
-
-@pytest.fixture(name="lookup_mock")
-def mock_lookup(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
-        text=load_fixture("lookup.json"),
-    )
-
-
-@pytest.fixture(name="lookup_mock_address")
-def mock_lookup_address(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&address=12345&sector=Residential",
-        text=load_fixture("lookup.json"),
-    )
-
-
-@pytest.fixture(name="lookup_mock_radius")
-def mock_lookup_radius(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential&radius=20",
-        text=load_fixture("lookup_radius.json"),
-    )
-
-
-@pytest.fixture(name="plandata_mock")
-def mock_plandata(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        text=load_fixture("plan_data.json"),
-    )
-
-
-@pytest.fixture(name="plandata_mock_address")
-def mock_plandata_address(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        text=load_fixture("plan_data.json"),
-    )
-
-
-@pytest.fixture(name="demand_plandata_mock")
-def mock_demand_plandata(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        text=load_fixture("plan_demand_data.json"),
-    )
-
-
-@pytest.fixture(name="tier_plandata_mock")
-def mock_tier_plandata(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        text=load_fixture("plan_tier_data.json"),
-    )
-
-
-@pytest.fixture(name="lookup_mock_404")
-def mock_lookup_404(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
-        status_code=404,
-    )
-
-
-@pytest.fixture(name="plandata_mock_404")
-def mock_plandata_404(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        status_code=404,
-    )
-
-
-@pytest.fixture(name="lookup_mock_401")
-def mock_lookup_401(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
-        status_code=401,
-    )
-
-
-@pytest.fixture(name="plandata_mock_401")
-def mock_plandata_401(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        status_code=401,
-    )
-
-
-@pytest.fixture(name="plandata_mock_api_err")
-def mock_plandata_api_err(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        text=load_fixture("api_error.json"),
-    )
-
-
-@pytest.fixture(name="lookup_mock_api_err")
-def mock_lookup_api_err(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&lat=1&lon=1&sector=Residential",
-        text=load_fixture("api_error.json"),
-    )
-
-
-@pytest.fixture(name="mock_rate_limit_err")
-def mock_rate_limit(requests_mock):
-    """Mock the status reply."""
-    requests_mock.get(
-        "https://api.openei.org/utility_rates?version=latest&format=json&api_key=fakeAPIKey&detail=full&getpage=574613aa5457a3557e906f5b",
-        text=load_fixture("rate_limit.json"),
     )
