@@ -170,6 +170,8 @@ async def test_get_rate_data(mock_aioclient, caplog):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    assert datetime.datetime.now() == datetime.datetime(2021, 8, 13, 10, 21, 34)
+    await test_rates.clear_cache()
     with caplog.at_level(logging.DEBUG):
         await test_rates.update()
     status = test_rates.current_rate
@@ -188,6 +190,7 @@ async def test_get_rate_data_2(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.current_rate
     adjustment = test_rates.current_adjustment
@@ -206,6 +209,7 @@ async def test_get_rate_data_weekend(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.current_rate
     adjustment = test_rates.current_adjustment
@@ -224,6 +228,8 @@ async def test_get_rate_data_weekend_demand(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    assert datetime.datetime.now() == datetime.datetime(2021, 8, 14, 13, 20, 00)
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.current_demand_rate
     assert status == 0
@@ -240,6 +246,7 @@ async def test_get_rate_data_demand(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.current_demand_rate
     assert status == 0
@@ -256,6 +263,7 @@ async def test_get_rate_data_2_demand(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.current_demand_rate
     adjustment = test_rates.current_demand_adjustment
@@ -273,6 +281,7 @@ async def test_get_demand_unit(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.demand_unit
     assert status == "kW"
@@ -288,6 +297,7 @@ async def test_get_distributed_generation(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.distributed_generation
     assert status == "Net Metering"
@@ -303,6 +313,7 @@ async def test_get_aproval(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.approval
     assert status
@@ -318,6 +329,7 @@ async def test_get_name(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.rate_name
     assert status == "Residential Service TOU Time Advantage 7PM-Noon (ET-2)"
@@ -358,6 +370,7 @@ async def test_get_plan_data_404(mock_aioclient):
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
     with pytest.raises(openeihttp.UrlNotFound):
+        await test_rates.clear_cache()
         await test_rates.update()
 
 
@@ -372,6 +385,7 @@ async def test_get_plan_data_401(mock_aioclient):
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
     with pytest.raises(openeihttp.NotAuthorized):
+        await test_rates.clear_cache()
         await test_rates.update()
 
 
@@ -386,6 +400,7 @@ async def test_get_plan_data_api_err(mock_aioclient, caplog):
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
     with pytest.raises(openeihttp.APIError):
+        await test_rates.clear_cache()
         await test_rates.update()
         assert (
             "No api_key was supplied. Get one at https://api.openei.org:443"
@@ -420,6 +435,7 @@ async def test_rate_limit_err(mock_aioclient, caplog):
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
     with pytest.raises(openeihttp.RateLimit):
+        await test_rates.clear_cache()
         await test_rates.update()
         assert (
             "You have exceeded your rate limit. Try again later or contact us at https://api.openei.org:443/contact/ for assistance"
@@ -437,6 +453,7 @@ async def test_get_all_rates(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.all_rates
     assert status == (
@@ -455,6 +472,7 @@ async def test_get_all_rates_demand(mock_aioclient):
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.all_rates
     assert status == ([0.07798, 0.11017, 0.1316], [0.005741, 0.005741, 0.005741])
@@ -833,6 +851,7 @@ async def test_get_tier_rate_data_low(test_lookup_tier_low, mock_aioclient):
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_low.clear_cache()
     await test_lookup_tier_low.update()
     rate = test_lookup_tier_low.current_rate
     struture = test_lookup_tier_low.current_energy_rate_structure
@@ -852,6 +871,7 @@ async def test_get_tier_rate_data_low_second_period(
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_low.clear_cache()
     await test_lookup_tier_low.update()
     rate = test_lookup_tier_low.current_rate
     structure = test_lookup_tier_low.current_energy_rate_structure
@@ -867,6 +887,7 @@ async def test_get_tier_rate_data_med(test_lookup_tier_med, mock_aioclient):
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_med.clear_cache()
     await test_lookup_tier_med.update()
     status = test_lookup_tier_med.current_rate
     assert status == 0.32596
@@ -880,6 +901,7 @@ async def test_get_tier_rate_data_high(test_lookup_tier_high, mock_aioclient):
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_high.clear_cache()
     await test_lookup_tier_high.update()
     status = test_lookup_tier_high.current_rate
     assert status == 0.40745
@@ -893,6 +915,7 @@ async def test_get_tier_rate_data_2(test_lookup_tier_low, mock_aioclient):
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_low.clear_cache()
     await test_lookup_tier_low.update()
     status = test_lookup_tier_low.current_rate
     assert status == 0.25902
@@ -906,6 +929,7 @@ async def test_get_tier_rate_data_weekend(test_lookup_tier_low, mock_aioclient):
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_low.clear_cache()
     await test_lookup_tier_low.update()
     status = test_lookup_tier_low.current_rate
     assert status == 0.25902
@@ -921,6 +945,7 @@ async def test_get_monthly_tier_rate_data_low(
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_monthly_tier_low.clear_cache()
     await test_lookup_monthly_tier_low.update()
     status = test_lookup_monthly_tier_low.monthly_tier_rate
     assert status == 0.25902
@@ -936,6 +961,7 @@ async def test_get_monthly_tier_rate_data_med(
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_monthly_tier_med.clear_cache()
     await test_lookup_monthly_tier_med.update()
     status = test_lookup_monthly_tier_med.monthly_tier_rate
     assert status == 0.32596
@@ -951,6 +977,7 @@ async def test_get_monthly_tier_rate_data_high(
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_monthly_tier_high.clear_cache()
     await test_lookup_monthly_tier_high.update()
     status = test_lookup_monthly_tier_high.monthly_tier_rate
     assert status == 0.40745
@@ -1104,6 +1131,7 @@ async def test_get_rate_data_address(test_rates_address, mock_aioclient):
         status=200,
         body=load_fixture("plan_data.json"),
     )
+    await test_rates_address.clear_cache()
     await test_rates_address.update()
     status = test_rates_address.current_rate
     assert status == 0.06118
@@ -1123,6 +1151,7 @@ async def test_mincharge(test_lookup_tier_low, mock_aioclient):
         status=200,
         body=load_fixture("plan_tier_data.json"),
     )
+    await test_lookup_tier_low.clear_cache()
     await test_lookup_tier_low.update()
     status = test_lookup_tier_low.mincharge
     assert status == (10, "$/month")
@@ -1134,10 +1163,12 @@ async def test_mincharge_none(mock_aioclient):
         re.compile(TEST_PATTERN),
         status=200,
         body=load_fixture("plan_data.json"),
+        repeat=True,
     )
     test_rates = openeihttp.Rates(
         api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
     )
+    await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.mincharge
     assert status is None
