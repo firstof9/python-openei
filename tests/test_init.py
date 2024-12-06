@@ -1,13 +1,14 @@
 """Test main functions."""
 
-from freezegun import freeze_time
 import datetime
 import logging
-import pytest
 import re
+
+import pytest
+from freezegun import freeze_time
+
 import openeihttp
 from openeihttp import InvalidCall
-
 from tests.common import load_fixture
 
 pytestmark = pytest.mark.asyncio

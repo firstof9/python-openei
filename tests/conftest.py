@@ -1,8 +1,9 @@
 """Provide common pytest fixtures."""
 
 import pytest
-import openeihttp
 from aioresponses import aioresponses
+
+import openeihttp
 
 pytestmark = pytest.mark.asyncio
 
