@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import datetime
 import logging
+import json
 import time
 from typing import Any, Dict
-import requests  # type: ignore
+import aiohttp  # type: ignore
+from aiohttp.client_exceptions import ContentTypeError, ServerTimeoutError
 from .const import BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
+DEFAULT_HEADERS = {
+    "Content-Type": "application/json",
+}
+ERROR_TIMEOUT = "Timeout while updating"
 
 
 class UrlNotFound(Exception):
@@ -61,7 +67,52 @@ class Rates:
         ]
         self._timestamp = datetime.datetime(1990, 1, 1, 0, 0, 0)
 
-    def lookup_plans(self) -> Dict[str, Any]:
+    async def process_request(self, params: dict, timeout: int = 90) -> dict[str, Any]:
+        """Process API requests."""
+        async with aiohttp.ClientSession(headers=DEFAULT_HEADERS) as session:
+            _LOGGER.debug("URL: %s", BASE_URL)
+            try:
+                async with session.get(
+                    BASE_URL, params=params, timeout=timeout
+                ) as response:
+                    message: Any = {}
+                    try:
+                        message = await response.text()
+                    except UnicodeDecodeError:
+                        _LOGGER.debug("Decoding error.")
+                        data = await response.read()
+                        message = data.decode(errors="replace")
+
+                    try:
+                        message = json.loads(message)
+                    except ValueError:
+                        _LOGGER.warning("Non-JSON response: %s", message)
+                        message = {"error": message}
+
+                    if response.status == 404:
+                        raise UrlNotFound
+                    elif response.status == 401:
+                        raise NotAuthorized
+                    elif response.status != 200:
+                        _LOGGER.error(  # pylint: disable-next=line-too-long
+                            "An error reteiving data from the server, code: %s\nmessage: %s",  # noqa: E501
+                            response.status,
+                            message,
+                        )
+                        message = {"error": message}
+                    return message
+
+            except (TimeoutError, ServerTimeoutError):
+                _LOGGER.error("%s: %s", ERROR_TIMEOUT, self._url)
+                message = {"error": ERROR_TIMEOUT}
+            except ContentTypeError as err:
+                _LOGGER.error("%s", err)
+                message = {"error": err}
+
+            await session.close()
+            return message
+
+    async def lookup_plans(self) -> Dict[str, Any]:
         """Return the rate plan names per utility in the area."""
         if self._address == "" and (self._lat == 9000 and self._lon == 9000):
             _LOGGER.error("Missing location data for a plan lookup.")
@@ -69,39 +120,35 @@ class Rates:
 
         thetime = time.time()
 
-        url = f"{BASE_URL}version=latest&format=json"
-        url = f"{url}&api_key={self._api}&orderby=startdate"
-        url = f"{url}&sector=Residential&effective_on_date={thetime}"
+        params = {
+            "version": "latest",
+            "format": "json",
+            "api_key": self._api,
+            "orderby": "startdate",
+            "sector": "Residential",
+            "effective_on_date": thetime,
+        }
+
         if self._radius != 0.0:
-            url = f"{url}&radius={self._radius}"
+            params["radius"] = self._radius
 
         if self._address == "":
-            url = f"{url}&lat={self._lat}&lon={self._lon}"
+            params["lat"] = self._lat
+            params["lon"] = self._lon
         else:
-            url = f"{url}&address={self._address}"
+            params["address"] = self._address
 
         rate_names: Dict[str, Any] = {}
-        msg = url
-        for redact in self._redact:
-            if redact:
-                msg = msg.replace(str(redact), "[REDACTED]")
-        redact_msg = "&lat=[REDACTED]&lon=[REDACTED]"
-        msg = msg.replace(f"&lat={self._lat}&lon={self._lon}", redact_msg)
-        _LOGGER.debug("Looking up plans via URL: %s", msg)
 
-        result = requests.get(url, timeout=90)
-        if result.status_code == 404:
-            raise UrlNotFound
-        if result.status_code == 401:
-            raise NotAuthorized
+        result = await self.process_request(params, timeout=90)
 
-        if "error" in result.json():
-            message = result.json()["error"]["message"]
+        if "error" in result.keys():
+            message = result["error"]["message"]
             _LOGGER.error("Error: %s", message)
             raise APIError
 
-        if "items" in result.json():
-            for item in result.json()["items"]:
+        if "items" in result.keys():
+            for item in result["items"]:
                 utility: str = item["utility"]
                 if utility not in rate_names:
                     rate_names[utility] = []
@@ -112,46 +159,42 @@ class Rates:
         rate_names[notlisted] = [{"name": notlisted, "label": notlisted}]
         return rate_names
 
-    def update(self) -> None:
+    async def update(self) -> None:
         """Update data only if we need to."""
         if self._data is None:
             _LOGGER.debug("No data populated, refreshing data.")
-            self.update_data()
+            await self.update_data()
             self._timestamp = datetime.datetime.now()
         else:
             elapsedtime = datetime.datetime.now() - self._timestamp
             past = datetime.timedelta(hours=24)
             if elapsedtime >= past:
                 _LOGGER.debug("Data stale, refreshing from API.")
-                self.update_data()
+                await self.update_data()
                 self._timestamp = datetime.datetime.now()
 
-    def update_data(self) -> None:
+    async def update_data(self) -> None:
         """Update the data."""
-        url = f"{BASE_URL}version=latest&format=json&detail=full"
-        url = f"{url}&api_key={self._api}&getpage={self._plan}"
 
-        msg = url
-        for redact in self._redact:
-            if redact:
-                msg = msg.replace(str(redact), "[REDACTED]")
-        _LOGGER.debug("Updating data via URL: %s", msg)
+        params = {
+            "version": "latest",
+            "format": "json",
+            "detail": "full",
+            "api_key": self._api,
+            "getpage": self._plan,
+        }
 
-        result = requests.get(url, timeout=90)
-        if result.status_code == 404:
-            raise UrlNotFound
-        if result.status_code == 401:
-            raise NotAuthorized
+        result = await self.process_request(params, timeout=90)
 
-        if "error" in result.json():
-            message = result.json()["error"]["message"]
+        if "error" in result.keys():
+            message = result["error"]["message"]
             _LOGGER.error("Error: %s", message)
             if "You have exceeded your rate limit." in message:
                 raise RateLimit
             raise APIError
 
-        if "items" in result.json():
-            data = result.json()["items"][0]
+        if "items" in result.keys():
+            data = result["items"][0]
             self._data = data
             _LOGGER.debug("Data updated, results: %s", self._data)
 

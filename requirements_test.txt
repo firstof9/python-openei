@@ -1,5 +1,7 @@
-pytest==8.3.4
-pytest-cov==6.0.0
-pytest-timeout==2.3.1
-requests_mock
+pytest
+pytest-asyncio
+pytest-cov
+pytest-timeout
+aiohttp
+aioresponses
 freezegun
