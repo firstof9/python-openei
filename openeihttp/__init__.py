@@ -11,6 +11,7 @@ from typing import Any, Dict
 import aiohttp  # type: ignore
 from aiohttp.client_exceptions import ContentTypeError, ServerTimeoutError
 
+from .cache import OpenEICache
 from .const import BASE_URL
 
 _LOGGER = logging.getLogger(__name__)
@@ -165,7 +166,12 @@ class Rates:
         """Update data only if we need to."""
         if self._data is None:
             _LOGGER.debug("No data populated, refreshing data.")
-            await self.update_data()
+            cache = OpenEICache()
+            # Load cached file if one exists
+            if await cache.cache_exists():
+                self._data = await cache.read_cache()
+            else:
+                await self.update_data()
             self._timestamp = datetime.datetime.now()
         else:
             elapsedtime = datetime.datetime.now() - self._timestamp
@@ -198,7 +204,16 @@ class Rates:
         if "items" in result.keys():
             data = result["items"][0]
             self._data = data
+            # Insert cache writing call here
+            cache = OpenEICache()
+            json_data = json.dumps(data).encode("utf-8")
+            await cache.write_cache(json_data)
             _LOGGER.debug("Data updated, results: %s", self._data)
+
+    async def clear_cache(self) -> None:
+        """Clear cache file."""
+        cache = OpenEICache()
+        await cache.clear_cache()
 
     @property
     def current_energy_rate_structure(self) -> int | None:

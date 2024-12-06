@@ -31,3 +31,4 @@ develop-eggs
 lib
 lib64
 pip-wheel-metadata
+openeihttp/openei_cache
