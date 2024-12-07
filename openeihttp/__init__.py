@@ -54,6 +54,7 @@ class Rates:
         radius: float = 0.0,
         address: str = "",
         reading: float = 0.0,
+        cache_file: str = None,
     ) -> None:
         """Initialize."""
         self._api = api
@@ -68,6 +69,7 @@ class Rates:
             self._api,
             self._address,
         ]
+        self._cache_file = cache_file
         self._timestamp = datetime.datetime(1990, 1, 1, 0, 0, 0)
 
     async def process_request(self, params: dict, timeout: int = 90) -> dict[str, Any]:
@@ -166,7 +168,10 @@ class Rates:
         """Update data only if we need to."""
         if self._data is None:
             _LOGGER.debug("No data populated, refreshing data.")
-            cache = OpenEICache()
+            if self._cache_file:
+                cache = OpenEICache(self._cache_file)
+            else:
+                cache = OpenEICache()
             # Load cached file if one exists
             if await cache.cache_exists():
                 self._data = await cache.read_cache()
@@ -205,14 +210,20 @@ class Rates:
             data = result["items"][0]
             self._data = data
             # Insert cache writing call here
-            cache = OpenEICache()
+            if self._cache_file:
+                cache = OpenEICache(self._cache_file)
+            else:
+                cache = OpenEICache()
             json_data = json.dumps(data).encode("utf-8")
             await cache.write_cache(json_data)
             _LOGGER.debug("Data updated, results: %s", self._data)
 
     async def clear_cache(self) -> None:
         """Clear cache file."""
-        cache = OpenEICache()
+        if self._cache_file:
+            cache = OpenEICache(self._cache_file)
+        else:
+            cache = OpenEICache()
         await cache.clear_cache()
 
     @property

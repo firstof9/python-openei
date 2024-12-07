@@ -11,23 +11,20 @@ _LOGGER = logging.getLogger(__name__)
 
 class OpenEICache:
     """ Represent OpenEI Cache manager."""
-    def __init__(self, path: str = './') -> None:
+    def __init__(self, cache_file: str = join(dirname(__file__), 'openei_cache')) -> None:
         """Initialize."""
-        self._path = path
-        self.filename = "openei_cache"
+        self._cache_file = cache_file
 
     async def write_cache(self, data: Any) -> None:
         """Write cache file."""
-        full_path = join(dirname(__file__), self._path, self.filename)
-        async with aiofiles.open(full_path, mode='wb') as file:
-            _LOGGER.debug("Writing file: %s", full_path)
+        async with aiofiles.open(self._cache_file, mode='wb') as file:
+            _LOGGER.debug("Writing file: %s", self._cache_file)
             await file.write(data)
 
     async def read_cache(self) -> Any:
         """Read cache file."""
-        full_path = join(dirname(__file__), self._path, self.filename)
-        async with aiofiles.open(full_path, mode='r') as file:
-            _LOGGER.debug("Reading file: %s", full_path)
+        async with aiofiles.open(self._cache_file, mode='r') as file:
+            _LOGGER.debug("Reading file: %s", self._cache_file)
             value = await file.read()
 
             try: 
@@ -40,15 +37,13 @@ class OpenEICache:
     
     async def cache_exists(self) -> bool:
         """Return bool if cache exists and contains data."""
-        full_path = join(dirname(__file__), self._path, self.filename)
-        check = await aiofiles.os.path.isfile(full_path)
+        check = await aiofiles.os.path.isfile(self._cache_file)
         if check:
-            size = await aiofiles.os.path.getsize(full_path)
+            size = await aiofiles.os.path.getsize(self._cache_file)
             return size > 194
         return False
 
     async def clear_cache(self) -> None:
         """Remove cache file."""
-        full_path = join(dirname(__file__), self._path, self.filename)
         if await self.cache_exists():
-            await aiofiles.os.remove(full_path)
+            await aiofiles.os.remove(self._cache_file)
