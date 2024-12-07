@@ -10,7 +10,7 @@ VERSION = "0.2.1"
 
 
 setup(
-    name="python-openei",
+    name="python_openei",
     version=VERSION,
     url="https://github.com/firstof9/python-openei",
     download_url="https://github.com/firstof9/python-openei",
