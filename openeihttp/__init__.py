@@ -174,8 +174,10 @@ class Rates:
                 cache = OpenEICache()
             # Load cached file if one exists
             if await cache.cache_exists():
+                _LOGGER.debug("Cache file exists, reading...")
                 self._data = await cache.read_cache()
             else:
+                _LOGGER.debug("Cache file missing, pulling API data...")
                 await self.update_data()
             self._timestamp = datetime.datetime.now()
         else:
