@@ -168,7 +168,11 @@ async def test_get_rate_data(mock_aioclient, caplog):
         repeat=True,
     )
     test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b", cache_file=".cache/574613aa5457a3557e906f5b"
+        api="fakeAPIKey",
+        lat="1",
+        lon="1",
+        plan="574613aa5457a3557e906f5b",
+        cache_file=".cache/574613aa5457a3557e906f5b",
     )
     assert datetime.datetime.now() == datetime.datetime(2021, 8, 13, 10, 21, 34)
     await test_rates.clear_cache()
