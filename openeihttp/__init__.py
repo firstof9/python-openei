@@ -96,9 +96,9 @@ class Rates:
 
                     if response.status == 404:
                         raise UrlNotFound
-                    elif response.status == 401:
+                    if response.status == 401:
                         raise NotAuthorized
-                    elif response.status != 200:
+                    if response.status != 200:
                         _LOGGER.error(  # pylint: disable-next=line-too-long
                             "An error reteiving data from the server, code: %s\nmessage: %s",  # noqa: E501
                             response.status,
@@ -108,7 +108,7 @@ class Rates:
                     return message
 
             except (TimeoutError, ServerTimeoutError):
-                _LOGGER.error("%s: %s", ERROR_TIMEOUT, self._url)
+                _LOGGER.error("%s: %s", ERROR_TIMEOUT, BASE_URL)
                 message = {"error": ERROR_TIMEOUT}
             except ContentTypeError as err:
                 _LOGGER.error("%s", err)
@@ -174,8 +174,10 @@ class Rates:
                 cache = OpenEICache()
             # Load cached file if one exists
             if await cache.cache_exists():
+                _LOGGER.debug("Cache file exists, reading...")
                 self._data = await cache.read_cache()
             else:
+                _LOGGER.debug("Cache file missing, pulling API data...")
                 await self.update_data()
             self._timestamp = datetime.datetime.now()
         else:
@@ -188,7 +190,6 @@ class Rates:
 
     async def update_data(self) -> None:
         """Update the data."""
-
         params = {
             "version": "latest",
             "format": "json",
