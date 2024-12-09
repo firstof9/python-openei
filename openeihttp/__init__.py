@@ -404,3 +404,11 @@ class Rates:
         if "mincharge" in self._data:
             return (self._data["mincharge"], self._data["minchargeunits"])
         return None
+
+    @property
+    def fixedchargefirstmeter(self) -> tuple | None:
+        """Return the fixedchargefirstmeter."""
+        assert self._data is not None
+        if "fixedchargefirstmeter" in self._data:
+            return (self._data["fixedchargefirstmeter"], self._data["fixedchargeunits"])
+        return None

@@ -1197,3 +1197,36 @@ async def test_get_rate_data_cache(mock_aioclient, caplog):
         with caplog.at_level(logging.DEBUG):
             await test_rates.update()
     assert "Data stale, refreshing from API." in caplog.text
+
+
+async def test_fixedchargefirstmeter(mock_aioclient):
+    """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("fixed_charge_rate.json"),
+        repeat=True,
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.clear_cache()
+    await test_rates.update()
+    status = test_rates.fixedchargefirstmeter
+    assert status == (15.75, "$/month")
+
+async def test_fixedchargefirstmeter_none(mock_aioclient):
+    """Test rate schedules."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+        repeat=True,
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    await test_rates.clear_cache()
+    await test_rates.update()
+    status = test_rates.fixedchargefirstmeter
+    assert status is None   
