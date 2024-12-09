@@ -1215,6 +1215,7 @@ async def test_fixedchargefirstmeter(mock_aioclient):
     status = test_rates.fixedchargefirstmeter
     assert status == (15.75, "$/month")
 
+
 async def test_fixedchargefirstmeter_none(mock_aioclient):
     """Test rate schedules."""
     mock_aioclient.get(
@@ -1229,4 +1230,4 @@ async def test_fixedchargefirstmeter_none(mock_aioclient):
     await test_rates.clear_cache()
     await test_rates.update()
     status = test_rates.fixedchargefirstmeter
-    assert status is None   
+    assert status is None

@@ -1,4 +1,5 @@
 """ Cache functions for python-openei."""
+
 import json
 import logging
 from os.path import dirname, exists, join, split
