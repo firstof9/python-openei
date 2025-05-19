@@ -883,6 +883,171 @@ async def test_get_tier_rate_data_low_second_period(
     assert structure == 1
 
 
+@freeze_time("2025-01-01 10:21:34")
+async def test_get_next_rate_structure(mock_aioclient):
+    """
+    Test calculating the next rate structure
+    This test is run on a weekday with the new structure occuring the same day
+    """
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+
+    await test_rates.clear_cache()
+    await test_rates.update()
+
+    current_structure = test_rates.current_energy_rate_structure
+    assert current_structure == 3
+
+    next_struture = test_rates.next_energy_rate_structure
+    next_time = test_rates.next_energy_rate_structure_time
+    assert next_struture == 2
+    assert next_time == datetime.datetime(2025, 1, 1, 12, 0)
+
+
+@freeze_time("2025-01-01 23:21:34") 
+async def test_get_next_rate_structure_next_day(mock_aioclient):
+    """
+    Test calculating the next rate structure
+    This test is run on a weekday with the new structure occuring the next day (also a weekday)
+    """
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+
+    await test_rates.clear_cache()
+    await test_rates.update()
+
+    current_structure = test_rates.current_energy_rate_structure
+    assert current_structure == 3
+
+    next_struture = test_rates.next_energy_rate_structure
+    next_time = test_rates.next_energy_rate_structure_time
+    assert next_struture == 2
+    assert next_time == datetime.datetime(2025, 1, 2, 12, 0)
+    
+
+@freeze_time("2025-01-03 23:21:34")
+async def test_get_next_rate_structure_weekend_loop(mock_aioclient):
+    """
+    Test calculating the next rate structure
+    This test is run on a weekday. The following weekend has the same structure for the entire week
+    So we must loop back to the following weekday to find the next structure
+    """
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+
+    await test_rates.clear_cache()
+    await test_rates.update()
+
+    current_structure = test_rates.current_energy_rate_structure
+    assert current_structure == 3
+
+    next_struture = test_rates.next_energy_rate_structure
+    next_time = test_rates.next_energy_rate_structure_time
+    assert next_struture == 2
+    assert next_time == datetime.datetime(2025, 1, 6, 12, 0)
+
+
+@freeze_time("2025-01-03 23:21:34")
+async def test_get_next_rate_structure_next_month(mock_aioclient):
+    """
+    Test calculating the next rate structure
+    plan_tier_data has a different structure than plan_data and the structure doesn't change until May
+    """
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+
+    await test_rates.clear_cache()
+    await test_rates.update()
+
+    current_structure = test_rates.current_energy_rate_structure
+    assert current_structure == 1
+
+    next_struture = test_rates.next_energy_rate_structure
+    next_time = test_rates.next_energy_rate_structure_time
+    assert next_struture == 0
+    assert next_time == datetime.datetime(2025, 5, 1, 0, 0)
+
+
+@freeze_time("2025-01-04 23:21:34")
+async def test_get_next_rate_structure_next_month_weekend_start(mock_aioclient):
+    """
+    Test calculating the next rate structure
+    This test is run on a weekend. The following weekday has the same structure for the entire week
+    The structure doesn't change until May
+    """
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+
+    await test_rates.clear_cache()
+    await test_rates.update()
+
+    current_structure = test_rates.current_energy_rate_structure
+    assert current_structure == 1
+
+    next_struture = test_rates.next_energy_rate_structure
+    next_time = test_rates.next_energy_rate_structure_time
+    assert next_struture == 0
+    assert next_time == datetime.datetime(2025, 5, 1, 0, 0)    
+
+
+@freeze_time("2024-11-01 23:21:34")
+async def test_get_next_rate_structure_next_year(mock_aioclient):
+    """
+    Test calculating the next rate structure
+    This test is run on a weekday. The following weekend has the same structure for the entire week
+    The structure doesn't change until May of the following year
+    """
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("plan_tier_data.json"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+
+    await test_rates.clear_cache()
+    await test_rates.update()
+
+    current_structure = test_rates.current_energy_rate_structure
+    assert current_structure == 1
+
+    next_struture = test_rates.next_energy_rate_structure
+    next_time = test_rates.next_energy_rate_structure_time
+    assert next_struture == 0
+    assert next_time == datetime.datetime(2025, 5, 1, 0, 0)    
+
+
 @freeze_time("2021-08-13 10:21:34")
 async def test_get_tier_rate_data_med(test_lookup_tier_med, mock_aioclient):
     """Test rate schedules."""
