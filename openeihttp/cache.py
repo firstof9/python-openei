@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 class OpenEICache:
     """Represent OpenEI Cache manager."""
 
-    def __init__(self, cache_file: str = None) -> None:
+    def __init__(self, cache_file: str = "") -> None:
         """Initialize."""
         if not cache_file:
             cache_file = join(dirname(__file__), "openei_cache")
