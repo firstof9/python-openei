@@ -510,14 +510,6 @@ class Rates:
         assert self._data is not None
         rate_structure = self.rate_structure(date, "energy")
         if rate_structure is not None:
-            if self._reading:
-                value = float(self._reading)
-                rate_data = self._data["energyratestructure"][rate_structure]
-                for rate in rate_data:
-                    if "max" in rate and value < rate["max"]:
-                        return rate["sell"]
-                    continue
-                return rate_data[-1]["sell"]
             rate = self._data["energyratestructure"][rate_structure][0]["sell"]
             return rate
         return None
