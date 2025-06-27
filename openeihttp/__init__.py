@@ -510,6 +510,8 @@ class Rates:
         assert self._data is not None
         rate_structure = self.rate_structure(date, "energy")
         if rate_structure is not None:
-            rate = self._data["energyratestructure"][rate_structure][0]["sell"]
-            return rate
+            try:
+                return self._data["energyratestructure"][rate_structure][0]["sell"]
+            except (KeyError, IndexError):
+                return None
         return None
