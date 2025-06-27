@@ -181,6 +181,8 @@ async def test_get_rate_data(mock_aioclient, caplog):
     status = test_rates.current_rate
     assert status == 0.06118
     assert "No data populated, refreshing data." in caplog.text
+    status = test_rates.current_sell_rate
+    assert status == None
 
 
 @freeze_time("2021-08-13 13:20:00")
