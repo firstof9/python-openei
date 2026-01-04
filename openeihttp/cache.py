@@ -1,4 +1,4 @@
-""" Cache functions for python-openei."""
+"""Cache functions for python-openei."""
 
 import json
 import logging
