@@ -266,7 +266,7 @@ class Rates:
     ) -> tuple[datetime.datetime | None, int | None]:
         """Return the next datetime at which the rate structure changes."""
         assert self._data is not None
-        if not f"{rate_type}ratestructure" in self._data:
+        if f"{rate_type}ratestructure" not in self._data:
             return None, None
 
         current_structure = self.rate_structure(start, rate_type)
