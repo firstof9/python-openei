@@ -1485,3 +1485,31 @@ async def test_get_lookup_data_content_type_error(mock_aioclient, caplog):
     with pytest.raises(openeihttp.APIError):
         await test_lookup.lookup_plans()
     assert "Attempt to decode JSON with unexpected mimetype" in caplog.text
+
+
+async def test_session_reuse(mock_aioclient):
+    """Test custom session is used and not closed."""
+    import aiohttp
+
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body=load_fixture("lookup.json"),
+    )
+    async with aiohttp.ClientSession() as custom_session:
+        test_lookup = openeihttp.Rates(
+            api="fakeAPIKey",
+            lat=1.0,
+            lon=1.0,
+            session=custom_session,
+        )
+        status = await test_lookup.lookup_plans()
+        assert status is not None
+        assert not custom_session.closed
+
+
+async def test_default_none_coordinates():
+    """Test that default coordinates are None."""
+    test_lookup = openeihttp.Rates(api="fakeAPIKey")
+    assert test_lookup._lat is None
+    assert test_lookup._lon is None
