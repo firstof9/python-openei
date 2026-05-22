@@ -4,3 +4,4 @@ flake8
 mypy
 pydocstyle
 pylint
+types-aiofiles

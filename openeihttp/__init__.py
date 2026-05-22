@@ -78,7 +78,9 @@ class Rates:
             _LOGGER.debug("URL: %s", BASE_URL)
             try:
                 async with session.get(
-                    BASE_URL, params=params, timeout=timeout
+                    BASE_URL,
+                    params=params,
+                    timeout=aiohttp.ClientTimeout(total=timeout),
                 ) as response:
                     message: Any = {}
                     try:
