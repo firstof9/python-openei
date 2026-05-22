@@ -2,6 +2,10 @@ name: Publish releases to PyPI
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag/version to publish (e.g. 0.3.0 or v0.3.0)'
+        required: false
   release:
     types: [published, prereleased]
 
@@ -19,6 +23,24 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ github.event.release.tag_name || inputs.tag || '' }}
+      - name: Set version in pyproject.toml
+        run: |
+          if [ -n "${{ github.event.release.tag_name }}" ]; then
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAG_NAME="${{ inputs.tag }}"
+          else
+            TAG_NAME=""
+          fi
+
+          if [ -n "$TAG_NAME" ]; then
+            VERSION="${TAG_NAME#v}"
+            echo "Setting version to ${VERSION} in pyproject.toml"
+            sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
+          else
+            echo "No tag or version input provided. Using version from pyproject.toml."
+          fi
       - name: Set up Python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
