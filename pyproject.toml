@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python_openei"
+version = "0.2.8"
+description = "Python wrapper for OpenEI HTTP API"
+readme = "README.md"
+authors = [
+    { name = "firstof9", email = "firstof9@gmail.com" }
+]
+requires-python = ">=3.8"
+dependencies = [
+    "aiofiles",
+    "aiohttp",
+    "requests",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.urls]
+Homepage = "https://github.com/firstof9/python-openei"
+
+[tool.setuptools.packages.find]
+exclude = ["test*", "tests"]
