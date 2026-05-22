@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
+requires = ["setuptools>=61.0.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "python_openei"
-version = "0.3.0"
+dynamic = ["version"]
 description = "Python wrapper for OpenEI HTTP API"
 readme = "README.md"
 authors = [
@@ -63,3 +63,5 @@ ignore = [
 "tests/*" = ["D", "S101", "E501", "SIM117"]
 
 [tool.ruff.format]
+
+[tool.setuptools_scm]
