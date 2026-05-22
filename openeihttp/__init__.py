@@ -149,7 +149,8 @@ class Rates:
         result = await self.process_request(params, timeout=90)
 
         if "error" in result:
-            message = result["error"]["message"]
+            err = result["error"]
+            message = err["message"] if isinstance(err, dict) and "message" in err else str(err)
             _LOGGER.error("Error: %s", message)
             raise APIError
 
@@ -199,7 +200,8 @@ class Rates:
         result = await self.process_request(params, timeout=90)
 
         if "error" in result:
-            message = result["error"]["message"]
+            err = result["error"]
+            message = err["message"] if isinstance(err, dict) and "message" in err else str(err)
             _LOGGER.error("Error: %s", message)
             if "You have exceeded your rate limit." in message:
                 raise RateLimit

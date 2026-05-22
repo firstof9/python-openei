@@ -1404,3 +1404,84 @@ async def test_get_sell_rate_data_3(mock_aioclient):
     await test_rates.update()
     status = test_rates.current_sell_rate
     assert status == 0.085252
+
+
+async def test_get_lookup_data_timeout(mock_aioclient, caplog):
+    """Test lookup_plans handles TimeoutError gracefully."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        exception=TimeoutError("Timeout"),
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+    with pytest.raises(openeihttp.APIError):
+        await test_lookup.lookup_plans()
+    assert "Timeout while updating" in caplog.text
+
+
+async def test_get_plan_data_timeout(mock_aioclient, caplog):
+    """Test update handles TimeoutError gracefully."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        exception=TimeoutError("Timeout"),
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    with pytest.raises(openeihttp.APIError):
+        await test_rates.clear_cache()
+        await test_rates.update()
+    assert "Timeout while updating" in caplog.text
+
+
+async def test_get_lookup_data_non_json(mock_aioclient, caplog):
+    """Test lookup_plans handles non-JSON response gracefully."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body="Not a JSON string",
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+    with pytest.raises(openeihttp.APIError):
+        await test_lookup.lookup_plans()
+    assert "Error: Not a JSON string" in caplog.text
+
+
+async def test_get_plan_data_non_json(mock_aioclient, caplog):
+    """Test update handles non-JSON response gracefully."""
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        status=200,
+        body="Not a JSON string",
+    )
+    test_rates = openeihttp.Rates(
+        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
+    )
+    with pytest.raises(openeihttp.APIError):
+        await test_rates.clear_cache()
+        await test_rates.update()
+    assert "Error: Not a JSON string" in caplog.text
+
+
+async def test_get_lookup_data_content_type_error(mock_aioclient, caplog):
+    """Test lookup_plans handles ContentTypeError gracefully."""
+    from aiohttp import RequestInfo
+    from aiohttp.client_exceptions import ContentTypeError
+    from yarl import URL
+
+    req_info = RequestInfo(
+        url=URL("https://api.openei.org/utility_rates"),
+        method="GET",
+        headers=None,
+    )
+    mock_aioclient.get(
+        re.compile(TEST_PATTERN),
+        exception=ContentTypeError(
+            req_info,
+            (),
+            message="Attempt to decode JSON with unexpected mimetype",
+        ),
+    )
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+    with pytest.raises(openeihttp.APIError):
+        await test_lookup.lookup_plans()
+    assert "Attempt to decode JSON with unexpected mimetype" in caplog.text
