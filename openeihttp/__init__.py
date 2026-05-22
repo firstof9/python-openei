@@ -6,7 +6,7 @@ import datetime
 import json
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp  # type: ignore
 from aiohttp.client_exceptions import ContentTypeError, ServerTimeoutError
@@ -41,7 +41,6 @@ class InvalidCall(Exception):
     """Exception for invalid library calls."""
 
 
-# pylint: disable=too-many-positional-arguments
 class Rates:
     """Represent OpenEI Rates."""
 
@@ -101,8 +100,8 @@ class Rates:
                     if response.status == 401:
                         raise NotAuthorized
                     if response.status != 200:
-                        _LOGGER.error(  # pylint: disable-next=line-too-long
-                            "An error reteiving data from the server, code: %s\nmessage: %s",  # noqa: E501
+                        _LOGGER.error(
+                            "An error reteiving data from the server, code: %s\nmessage: %s",
                             response.status,
                             message,
                         )
@@ -119,7 +118,7 @@ class Rates:
             await session.close()
             return message
 
-    async def lookup_plans(self) -> Dict[str, Any]:
+    async def lookup_plans(self) -> dict[str, Any]:
         """Return the rate plan names per utility in the area."""
         if self._address == "" and (self._lat == 9000 and self._lon == 9000):
             _LOGGER.error("Missing location data for a plan lookup.")
@@ -145,16 +144,16 @@ class Rates:
         else:
             params["address"] = self._address
 
-        rate_names: Dict[str, Any] = {}
+        rate_names: dict[str, Any] = {}
 
         result = await self.process_request(params, timeout=90)
 
-        if "error" in result.keys():
+        if "error" in result:
             message = result["error"]["message"]
             _LOGGER.error("Error: %s", message)
             raise APIError
 
-        if "items" in result.keys():
+        if "items" in result:
             for item in result["items"]:
                 utility: str = item["utility"]
                 if utility not in rate_names:
@@ -170,10 +169,7 @@ class Rates:
         """Update data only if we need to."""
         if self._data is None:
             _LOGGER.debug("No data populated, refreshing data.")
-            if self._cache_file:
-                cache = OpenEICache(self._cache_file)
-            else:
-                cache = OpenEICache()
+            cache = OpenEICache(self._cache_file) if self._cache_file else OpenEICache()
             # Load cached file if one exists
             if await cache.cache_exists():
                 _LOGGER.debug("Cache file exists, reading...")
@@ -202,31 +198,25 @@ class Rates:
 
         result = await self.process_request(params, timeout=90)
 
-        if "error" in result.keys():
+        if "error" in result:
             message = result["error"]["message"]
             _LOGGER.error("Error: %s", message)
             if "You have exceeded your rate limit." in message:
                 raise RateLimit
             raise APIError
 
-        if "items" in result.keys():
+        if "items" in result:
             data = result["items"][0]
             self._data = data
             # Insert cache writing call here
-            if self._cache_file:
-                cache = OpenEICache(self._cache_file)
-            else:
-                cache = OpenEICache()
+            cache = OpenEICache(self._cache_file) if self._cache_file else OpenEICache()
             json_data = json.dumps(data).encode("utf-8")
             await cache.write_cache(json_data)
             _LOGGER.debug("Data updated, results: %s", self._data)
 
     async def clear_cache(self) -> None:
         """Clear cache file."""
-        if self._cache_file:
-            cache = OpenEICache(self._cache_file)
-        else:
-            cache = OpenEICache()
+        cache = OpenEICache(self._cache_file) if self._cache_file else OpenEICache()
         await cache.clear_cache()
 
     @property
@@ -242,11 +232,7 @@ class Rates:
             hour = date.hour
             weekend = date.weekday() > 4
 
-            table = (
-                f"{rate_type}weekendschedule"
-                if weekend
-                else f"{rate_type}weekdayschedule"
-            )
+            table = f"{rate_type}weekendschedule" if weekend else f"{rate_type}weekdayschedule"
             lookup_table = self._data[table]
             rate_structure = lookup_table[month][hour]
 
@@ -308,16 +294,14 @@ class Rates:
                         return current_time.replace(hour=hour), rate_structure
 
                     # Handle next day transition
-                    if day_of_week not in [4, 6]:
-                        if (
-                            current_time + datetime.timedelta(days=1)
-                        ).month == current_time.month:
-                            return (
-                                current_time.replace(
-                                    day=current_time.day + 1, hour=hour
-                                ),
-                                rate_structure,
-                            )
+                    if (
+                        day_of_week not in [4, 6]
+                        and (current_time + datetime.timedelta(days=1)).month == current_time.month
+                    ):
+                        return (
+                            current_time.replace(day=current_time.day + 1, hour=hour),
+                            rate_structure,
+                        )
 
                 days_to_move = 5 - day_of_week if day_of_week <= 4 else 7 - day_of_week
 
@@ -326,9 +310,7 @@ class Rates:
                 ).month != current_time.month:
                     break
 
-                current_time = current_time.replace(
-                    hour=0, day=current_time.day + days_to_move
-                )
+                current_time = current_time.replace(hour=0, day=current_time.day + days_to_move)
 
             current_time = current_time.replace(day=1)
 

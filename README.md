@@ -51,7 +51,7 @@ async def main():
     print(f"Rate Plan Name: {api.rate_name}")
     print(f"Current Energy Rate: ${api.current_rate}/kWh")
     print(f"Current Sell Rate: ${api.current_sell_rate}/kWh")
-    
+
     # Check what the next rate will be and when it changes
     next_time = api.next_energy_rate_structure_time
     next_rate = api.next_energy_rate_structure
@@ -80,7 +80,7 @@ async def lookup():
     )
 
     plans = await api.lookup_plans()
-    
+
     # plans will be grouped by utility name
     for utility, plan_list in plans.items():
         print(f"\nUtility: {utility}")

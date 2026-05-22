@@ -182,7 +182,7 @@ async def test_get_rate_data(mock_aioclient, caplog):
     assert status == 0.06118
     assert "No data populated, refreshing data." in caplog.text
     status = test_rates.current_sell_rate
-    assert status == None
+    assert status is None
 
 
 @freeze_time("2021-08-13 13:20:00")
@@ -408,10 +408,7 @@ async def test_get_plan_data_api_err(mock_aioclient, caplog):
     with pytest.raises(openeihttp.APIError):
         await test_rates.clear_cache()
         await test_rates.update()
-        assert (
-            "No api_key was supplied. Get one at https://api.openei.org:443"
-            in caplog.text
-        )
+        assert "No api_key was supplied. Get one at https://api.openei.org:443" in caplog.text
 
 
 async def test_get_lookup_data_api_err(mock_aioclient, caplog):
@@ -424,10 +421,7 @@ async def test_get_lookup_data_api_err(mock_aioclient, caplog):
     test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
     with pytest.raises(openeihttp.APIError):
         await test_lookup.lookup_plans()
-        assert (
-            "No api_key was supplied. Get one at https://api.openei.org:443"
-            in caplog.text
-        )
+        assert "No api_key was supplied. Get one at https://api.openei.org:443" in caplog.text
 
 
 async def test_rate_limit_err(mock_aioclient, caplog):
@@ -627,155 +621,131 @@ async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient, caplog
         "Salt River Project": [
             {
                 "label": "539f755cec4f024411ed1357",
-                "name": "E-23 STANDARD PRICE PLAN FOR RESIDENTIAL " "SERVICE",
+                "name": "E-23 STANDARD PRICE PLAN FOR RESIDENTIAL SERVICE",
             },
             {
                 "label": "539fb6a4ec4f024bc1dc028f",
-                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY " "RESIDENTIAL SERVICE",
+                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY RESIDENTIAL SERVICE",
             },
             {
                 "label": "539fb86aec4f024bc1dc1713",
-                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK "
-                "TIME-OF-USE SERVICE",
+                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "539fbec8ec4f024c27d88a91",
-                "name": "E-25 - Experimental Plan for Residential "
-                "Super Peak Time-of-Use Service",
+                "name": "E-25 - Experimental Plan for Residential Super Peak Time-of-Use Service",
             },
             {
                 "label": "539fc8d1ec4f024d2f53eab0",
-                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL "
-                "SUPER PEAK TIME-OF-USE SERVICE",
+                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "539fc9d6ec4f024d2f53f55c",
-                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL "
-                "PRE-PAY TIME-OF-USE SERVICE",
+                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL PRE-PAY TIME-OF-USE SERVICE",
             },
             {
                 "label": "539fca4dec4f024d2f53fa1e",
-                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL "
-                "TIME-OF-USE SERVICE",
+                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL TIME-OF-USE SERVICE",
             },
             {
                 "label": "548a03535357a3ff32f0c30b",
-                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL "
-                "SUPER PEAK TIME-OF-USE SERVICE",
+                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "56c77d785457a3410cb338bb",
-                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL " "SERVICE",
+                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL SERVICE",
             },
             {
                 "label": "56c77e775457a3fe28b338bb",
-                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL "
-                "TIME-OF-USE SERVICE",
+                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL TIME-OF-USE SERVICE",
             },
             {
                 "label": "56c780355457a30a29b338bb",
-                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY " "RESIDENTIAL SERVICE",
+                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY RESIDENTIAL SERVICE",
             },
             {
                 "label": "56c781055457a3672db338bb",
-                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK "
-                "TIME-OF-USE SERVICE",
+                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "56c781af5457a35833b338bc",
-                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL "
-                "SUPER PEAK TIME-OF-USE SERVICE",
+                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "56c7827e5457a3143ab338bb",
-                "name": "E-25 - Experimental Plan for Residential "
-                "Super Peak Time-of-Use Service",
+                "name": "E-25 - Experimental Plan for Residential Super Peak Time-of-Use Service",
             },
             {
                 "label": "56c783fe5457a35833b338bd",
-                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL "
-                "PRE-PAY TIME-OF-USE SERVICE",
+                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL PRE-PAY TIME-OF-USE SERVICE",
             },
             {
                 "label": "5880efe95457a35b73316ce6",
-                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL " "SERVICE",
+                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL SERVICE",
             },
             {
                 "label": "5880f0db5457a3c97b316ce6",
-                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY " "RESIDENTIAL SERVICE",
+                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY RESIDENTIAL SERVICE",
             },
             {
                 "label": "5880f1885457a3e863316ce6",
-                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL "
-                "TIME-OF-USE SERVICE",
+                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL TIME-OF-USE SERVICE",
             },
             {
                 "label": "5880f24d5457a33d48316ce6",
-                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK "
-                "TIME-OF-USE SERVICE",
+                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "5880ff0c5457a3d70e316ce6",
-                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL "
-                "SUPER PEAK TIME-OF-USE SERVICE",
+                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "5881012e5457a30f3e316ce6",
-                "name": "E-25 - Experimental Plan for Residential "
-                "Super Peak Time-of-Use Service",
+                "name": "E-25 - Experimental Plan for Residential Super Peak Time-of-Use Service",
             },
             {
                 "label": "588103e85457a3d70e316ce7",
-                "name": "E-27 P Pilot Price Plan for Residential "
-                "Demand Rate Service",
+                "name": "E-27 P Pilot Price Plan for Residential Demand Rate Service",
             },
             {
                 "label": "5881042b5457a35b73316ce7",
-                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL "
-                "PRE-PAY TIME-OF-USE SERVICE",
+                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL PRE-PAY TIME-OF-USE SERVICE",
             },
             {
                 "label": "59f8cac65457a32644c05083",
-                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL "
-                "SERVICE Low Income Rate",
+                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL SERVICE Low Income Rate",
             },
             {
                 "label": "5a55224a5457a3ac5d423a7d",
-                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL " "SERVICE",
+                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL SERVICE",
             },
             {
                 "label": "5a58f7fa5457a3ff19423a7c",
-                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK "
-                "TIME-OF-USE SERVICE",
+                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "5a58f8ec5457a3931d423a7c",
-                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL "
-                "SUPER PEAK TIME-OF-USE SERVICE",
+                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "5a58f9605457a30e35423a7c",
-                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY " "RESIDENTIAL SERVICE",
+                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY RESIDENTIAL SERVICE",
             },
             {
                 "label": "5a58f9cd5457a34151423a7c",
-                "name": "E-25 - Experimental Plan for Residential "
-                "Super Peak Time-of-Use Service",
+                "name": "E-25 - Experimental Plan for Residential Super Peak Time-of-Use Service",
             },
             {
                 "label": "5a58fa865457a3ec1b423a7c",
-                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL "
-                "TIME-OF-USE SERVICE",
+                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL TIME-OF-USE SERVICE",
             },
             {
                 "label": "5a58fb8e5457a3b71c423a7c",
-                "name": "E-27 P Pilot Price Plan for Residential "
-                "Demand Rate Service",
+                "name": "E-27 P Pilot Price Plan for Residential Demand Rate Service",
             },
             {
                 "label": "5a58fc915457a3ff19423a7d",
-                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL "
-                "PRE-PAY TIME-OF-USE SERVICE",
+                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL PRE-PAY TIME-OF-USE SERVICE",
             },
             {
                 "label": "5a59008c5457a3ad69423a7c",
@@ -785,36 +755,31 @@ async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient, caplog
             },
             {
                 "label": "5cf58ee05457a3160d26c07e",
-                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL " "SERVICE",
+                "name": "E-23 BASIC PRICE PLAN FOR RESIDENTIAL SERVICE",
             },
             {
                 "label": "5cf815b25457a3be3326c07d",
-                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK "
-                "TIME-OF-USE SERVICE",
+                "name": "E-21 PRICE PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "5cf816af5457a35b2e26c07e",
-                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL "
-                "SUPER PEAK TIME-OF-USE SERVICE",
+                "name": "E-22 - EXPERIMENTAL PLAN FOR RESIDENTIAL SUPER PEAK TIME-OF-USE SERVICE",
             },
             {
                 "label": "5cf8174b5457a3562a26c07d",
-                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY " "RESIDENTIAL SERVICE",
+                "name": "E-24 M-POWER PRICE PLAN FOR PRE-PAY RESIDENTIAL SERVICE",
             },
             {
                 "label": "5cf817db5457a32f3126c07d",
-                "name": "E-25 - Experimental Plan for Residential "
-                "Super Peak Time-of-Use Service",
+                "name": "E-25 - Experimental Plan for Residential Super Peak Time-of-Use Service",
             },
             {
                 "label": "5cf8264e5457a3063126c07d",
-                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL "
-                "TIME-OF-USE SERVICE",
+                "name": "E-26 STANDARD PRICE PLAN FOR RESIDENTIAL TIME-OF-USE SERVICE",
             },
             {
                 "label": "5cf826d55457a3063126c07e",
-                "name": "E-27 P Pilot Price Plan for Residential "
-                "Demand Rate Service",
+                "name": "E-27 P Pilot Price Plan for Residential Demand Rate Service",
             },
             {
                 "label": "5cf82a395457a3d92b26c07d",
@@ -824,13 +789,11 @@ async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient, caplog
             },
             {
                 "label": "5cf831715457a3612f26c07d",
-                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL "
-                "PRE-PAY TIME-OF-USE SERVICE",
+                "name": "E-28 M-POWER PRICE PLAN FOR RESIDENTIAL PRE-PAY TIME-OF-USE SERVICE",
             },
             {
                 "label": "5d9b7fc95457a3d865598dce",
-                "name": "E-14 RESIDENTIAL CUSTOMER GENERATION "
-                "ELECTRIC VEHICLE EXPORT PRICE PLAN",
+                "name": "E-14 RESIDENTIAL CUSTOMER GENERATION ELECTRIC VEHICLE EXPORT PRICE PLAN",
             },
             {
                 "label": "5dc498485457a37b0cf6a951",
@@ -868,9 +831,7 @@ async def test_get_tier_rate_data_low(test_lookup_tier_low, mock_aioclient):
 @freeze_time(
     "2021-11-01 10:21:34"
 )  # November 1 is the first day of a separate rate structure for this plan
-async def test_get_tier_rate_data_low_second_period(
-    test_lookup_tier_low, mock_aioclient
-):
+async def test_get_tier_rate_data_low_second_period(test_lookup_tier_low, mock_aioclient):
     """Test rate schedules."""
     mock_aioclient.get(
         re.compile(TEST_PATTERN),
@@ -1107,9 +1068,7 @@ async def test_get_tier_rate_data_weekend(test_lookup_tier_low, mock_aioclient):
 
 
 @freeze_time("2021-08-13 10:21:34")
-async def test_get_monthly_tier_rate_data_low(
-    test_lookup_monthly_tier_low, mock_aioclient
-):
+async def test_get_monthly_tier_rate_data_low(test_lookup_monthly_tier_low, mock_aioclient):
     """Test rate schedules."""
     mock_aioclient.get(
         re.compile(TEST_PATTERN),
@@ -1123,9 +1082,7 @@ async def test_get_monthly_tier_rate_data_low(
 
 
 @freeze_time("2021-08-13 10:21:34")
-async def test_get_monthly_tier_rate_data_med(
-    test_lookup_monthly_tier_med, mock_aioclient
-):
+async def test_get_monthly_tier_rate_data_med(test_lookup_monthly_tier_med, mock_aioclient):
     """Test rate schedules."""
     mock_aioclient.get(
         re.compile(TEST_PATTERN),
@@ -1139,9 +1096,7 @@ async def test_get_monthly_tier_rate_data_med(
 
 
 @freeze_time("2021-08-13 10:21:34")
-async def test_get_monthly_tier_rate_data_high(
-    test_lookup_monthly_tier_high, mock_aioclient
-):
+async def test_get_monthly_tier_rate_data_high(test_lookup_monthly_tier_high, mock_aioclient):
     """Test rate schedules."""
     mock_aioclient.get(
         re.compile(TEST_PATTERN),
@@ -1435,7 +1390,7 @@ async def test_get_sell_rate_data_2(mock_aioclient):
 
 
 @freeze_time("2021-11-13 09:20:00")
-async def test_get_sell_rate_data_2(mock_aioclient):
+async def test_get_sell_rate_data_3(mock_aioclient):
     """Test rate schedules."""
     mock_aioclient.get(
         re.compile(TEST_PATTERN),
