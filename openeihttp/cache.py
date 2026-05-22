@@ -26,9 +26,9 @@ class OpenEICache:
 
     async def write_cache(self, data: bytes) -> None:
         """Write cache file."""
-        if self._directory != "" and not await aiofiles.ospath.exists(self._directory):
-            _LOGGER.debug("Directory missing creating: %s", self._directory)
-            await aiofiles.os.makedirs(self._directory)
+        if self._directory != "":
+            _LOGGER.debug("Ensuring directory exists: %s", self._directory)
+            await aiofiles.os.makedirs(self._directory, exist_ok=True)
         async with aiofiles.open(self._cache_file, mode="wb") as file:
             _LOGGER.debug("Writing file: %s", self._cache_file)
             await file.write(data)
@@ -56,7 +56,7 @@ class OpenEICache:
         if check:
             size = await aiofiles.os.path.getsize(self._cache_file)
             _LOGGER.debug("Checking cache file size: %s", size)
-            return size > MIN_CACHE_SIZE
+            return size >= MIN_CACHE_SIZE
         return False
 
     async def clear_cache(self) -> None:

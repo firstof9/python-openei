@@ -105,7 +105,7 @@ class Rates:
 
     async def lookup_plans(self) -> dict[str, Any]:
         """Return the rate plan names per utility in the area."""
-        if self._address == "" and (self._lat is None and self._lon is None):
+        if self._address == "" and (self._lat is None or self._lon is None):
             _LOGGER.error("Missing location data for a plan lookup.")
             raise InvalidCall
 

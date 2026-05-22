@@ -1513,3 +1513,14 @@ async def test_default_none_coordinates():
     test_lookup = openeihttp.Rates(api="fakeAPIKey")
     assert test_lookup._lat is None
     assert test_lookup._lon is None
+
+
+async def test_partial_coordinates():
+    """Test that partial coordinates raise InvalidCall."""
+    test_lookup_lat = openeihttp.Rates(api="fakeAPIKey", lat=1.0)
+    with pytest.raises(openeihttp.InvalidCall):
+        await test_lookup_lat.lookup_plans()
+
+    test_lookup_lon = openeihttp.Rates(api="fakeAPIKey", lon=1.0)
+    with pytest.raises(openeihttp.InvalidCall):
+        await test_lookup_lon.lookup_plans()
