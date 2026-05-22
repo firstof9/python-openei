@@ -9,12 +9,15 @@ jobs:
   build-and-publish:
     name: Builds and publishes releases to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v3.1.0
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4.3.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: 3.9
+          python-version: "3.12"
       - name: Install wheel
         run: >-
           pip install wheel
@@ -22,7 +25,7 @@ jobs:
         run: >-
           python3 setup.py sdist bdist_wheel
       - name: Publish release to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.13.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
