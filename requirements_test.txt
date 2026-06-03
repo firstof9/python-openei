@@ -4,5 +4,4 @@ pytest-asyncio
 pytest-cov
 pytest-timeout
 aiohttp
-aioresponses
 freezegun
