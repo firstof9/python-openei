@@ -6,9 +6,7 @@ categories:
   - title: "⚠ Breaking Changes"
     semver-increment: "major"
     when:
-      labels:
-        - "breaking change"
-        - "breaking-change"
+      label: "breaking-change"
 
   - title: "✨ New Features"
     semver-increment: "minor"
