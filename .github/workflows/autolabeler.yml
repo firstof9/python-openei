@@ -1,0 +1,44 @@
+---
+name: 'Autolabeler'
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions: {}
+
+concurrency:
+  group: ${{ format('al-{0}-pr-{1}', github.event_name, github.event.pull_request.number) }}
+  cancel-in-progress: true
+
+jobs:
+  autolabel:
+    name: 'Autolabel PR'
+    # Run on pull_request_target for forks, pull_request for
+    # same-repo PRs to prevent duplicate runs
+    if: >
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.fork) ||
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork)
+    # SECURITY: pull_request_target with write permissions is safe
+    # here because the autolabeler action does NOT checkout any code
+    # from the PR — it only reads the PR title/body via GitHub API.
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 3
+    steps:
+      # Harden the runner used by this workflow
+      - uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: 'audit'
+
+      - uses: release-drafter/release-drafter/autolabeler@d1a19e60e81a7e650d00a7de9277f87e439117ea # v7.11.0
