@@ -4,8 +4,12 @@ import datetime
 import logging
 import re
 
+import aiohttp
 import pytest
+from aiohttp import RequestInfo
+from aiohttp.client_exceptions import ContentTypeError
 from freezegun import freeze_time
+from yarl import URL
 
 import openeihttp
 from openeihttp import InvalidCall
@@ -14,606 +18,324 @@ from tests.common import load_fixture
 pytestmark = pytest.mark.asyncio
 
 TEST_URL = "https://api.openei.org/utility_rates"
-TEST_PATTERN = r"^https://api\.openei\.org/utility_rates\?.*$"
+TEST_REGEX = re.compile(r"^https://api\.openei\.org/utility_rates\?.*$")
+DEFAULT_PLAN = "574613aa5457a3557e906f5b"
+
+APS_PLANS = [
+    {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
+    {
+        "name": "Residential Bundled & Adjustments No Tax TOU; Time Adv Super peak 7PM-Noon (ET-SP)",
+        "label": "542aec8a5257a310694b1ab6",
+    },
+    {
+        "name": "Residential Service Bundled Standard rate",
+        "label": "55563ddf5457a3bf6c8b4570",
+    },
+    {
+        "name": "Residential Bundled & Adjustments No Tax TOU ; Time Adv 7PM-Noon  (ET-2)",
+        "label": "55563df55457a35e758b4568",
+    },
+    {
+        "name": "Residential Bundled & Adjustments No Tax TOU w/ Demand; Combined Adv  7PM-Noon (ECT-2)",
+        "label": "562bea025457a31838418740",
+    },
+    {
+        "name": "Residential Service Bundled Standard rate",
+        "label": "5743aa135457a3a636906f5b",
+    },
+    {
+        "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
+        "label": "574613aa5457a3557e906f5b",
+    },
+    {
+        "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
+        "label": "574615f85457a3557e906f5c",
+    },
+    {
+        "name": "Residential Service Standard (E-12)",
+        "label": "5748ab725457a37e7d906f5b",
+    },
+    {
+        "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
+        "label": "5748ac7a5457a37d7d906f5b",
+    },
+    {
+        "name": "Residential Service Standard (E-12)",
+        "label": "5881345e5457a35973316ce7",
+    },
+    {
+        "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
+        "label": "588135ee5457a3873f316ce6",
+    },
+    {
+        "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
+        "label": "5890c92f5457a36c373dbec0",
+    },
+    {
+        "name": "Residential Service Standard (E-12) Low Income",
+        "label": "59fcde8e5457a3a04cc05084",
+    },
+    {
+        "name": "Residential Service Standard (E-12) [Frozen]",
+        "label": "5a592dee5457a3931d423a81",
+    },
+    {
+        "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2) [Frozen]",
+        "label": "5a5930055457a36274423a7d",
+    },
+    {
+        "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2) [Frozen]",
+        "label": "5a5930bf5457a3371c423a7e",
+    },
+    {
+        "name": "Residential Time of Use (Saver Choice)",
+        "label": "5a5933d25457a3ad69423a81",
+    },
+    {
+        "name": "Residential Service (Saver Choice Plus)",
+        "label": "5a5935475457a3ad69423a82",
+    },
+    {
+        "name": "Residential Service (Saver Choice Max)",
+        "label": "5a5936ef5457a36274423a7f",
+    },
+    {
+        "name": "Extra Small Residential Service (Lite Choice)",
+        "label": "5a5937bb5457a3b71c423a7f",
+    },
+    {
+        "name": "Small Residential Service (Premier Choice)",
+        "label": "5a59388c5457a3931d423a84",
+    },
+    {
+        "name": "Large Residential Service (Premier Choice Large)",
+        "label": "5a5939515457a3371c423a7f",
+    },
+    {
+        "name": "Residential Service (Pilot Technology Rate)",
+        "label": "5a593d815457a3371c423a80",
+    },
+    {
+        "name": "Extra Small Residential Service (Lite Choice) R-XS",
+        "label": "5cacc5605457a379257780e2",
+    },
+    {
+        "name": "Small Residential Service (Premier Choice) R-Basic",
+        "label": "5cacc6545457a3634c7780e2",
+    },
+    {
+        "name": "Large Residential Service (Premier Choice Large) R-Basic L [Frozen]",
+        "label": "5cacc6e75457a3a8497780e2",
+    },
+    {
+        "name": "Residential Time of Use (Saver Choice) TOU-E",
+        "label": "5cacc7715457a393487780e2",
+    },
+    {
+        "name": "Residential Service (Saver Choice Max)",
+        "label": "5cacc9ae5457a3c6517780e2",
+    },
+    {
+        "name": "Residential Service (Saver Choice Plus) R-2",
+        "label": "5cacc9d15457a31d537780e2",
+    },
+    {
+        "name": "Residential Service (Saver Choice Max) R-3",
+        "label": "5caccb2f5457a3c8517780e2",
+    },
+    {
+        "name": "Residential Service (Pilot Technology Rate) R-Tech",
+        "label": "5caccd925457a31a537780e2",
+    },
+]
+
+EXPECTED_LOOKUP_PLANS = {
+    "Arizona Public Service Co": APS_PLANS,
+    "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
+}
 
 
-async def test_get_lookup_data(mock_aioclient):
-    """Test v4 Status reply"""
+async def _load_rates(
+    mock_aioclient, fixture: str, repeat: bool = False, **kwargs
+) -> openeihttp.Rates:
+    """Mock a plan fixture response, clear cache, and update a Rates instance."""
     mock_aioclient.get(
-        re.compile(TEST_PATTERN),
+        TEST_REGEX,
         status=200,
-        body=load_fixture("lookup.json"),
+        body=load_fixture(fixture),
+        repeat=repeat,
     )
-    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
-    status = await test_lookup.lookup_plans()
-    assert status == {
-        "Arizona Public Service Co": [
-            {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU; Time Adv Super peak 7PM-Noon (ET-SP)",
-                "label": "542aec8a5257a310694b1ab6",
-            },
-            {
-                "name": "Residential Service Bundled Standard rate",
-                "label": "55563ddf5457a3bf6c8b4570",
-            },
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU ; Time Adv 7PM-Noon  (ET-2)",
-                "label": "55563df55457a35e758b4568",
-            },
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU w/ Demand; Combined Adv  7PM-Noon (ECT-2)",
-                "label": "562bea025457a31838418740",
-            },
-            {
-                "name": "Residential Service Bundled Standard rate",
-                "label": "5743aa135457a3a636906f5b",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "574613aa5457a3557e906f5b",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
-                "label": "574615f85457a3557e906f5c",
-            },
-            {
-                "name": "Residential Service Standard (E-12)",
-                "label": "5748ab725457a37e7d906f5b",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "5748ac7a5457a37d7d906f5b",
-            },
-            {
-                "name": "Residential Service Standard (E-12)",
-                "label": "5881345e5457a35973316ce7",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "588135ee5457a3873f316ce6",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
-                "label": "5890c92f5457a36c373dbec0",
-            },
-            {
-                "name": "Residential Service Standard (E-12) Low Income",
-                "label": "59fcde8e5457a3a04cc05084",
-            },
-            {
-                "name": "Residential Service Standard (E-12) [Frozen]",
-                "label": "5a592dee5457a3931d423a81",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2) [Frozen]",
-                "label": "5a5930055457a36274423a7d",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2) [Frozen]",
-                "label": "5a5930bf5457a3371c423a7e",
-            },
-            {
-                "name": "Residential Time of Use (Saver Choice)",
-                "label": "5a5933d25457a3ad69423a81",
-            },
-            {
-                "name": "Residential Service (Saver Choice Plus)",
-                "label": "5a5935475457a3ad69423a82",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max)",
-                "label": "5a5936ef5457a36274423a7f",
-            },
-            {
-                "name": "Extra Small Residential Service (Lite Choice)",
-                "label": "5a5937bb5457a3b71c423a7f",
-            },
-            {
-                "name": "Small Residential Service (Premier Choice)",
-                "label": "5a59388c5457a3931d423a84",
-            },
-            {
-                "name": "Large Residential Service (Premier Choice Large)",
-                "label": "5a5939515457a3371c423a7f",
-            },
-            {
-                "name": "Residential Service (Pilot Technology Rate)",
-                "label": "5a593d815457a3371c423a80",
-            },
-            {
-                "name": "Extra Small Residential Service (Lite Choice) R-XS",
-                "label": "5cacc5605457a379257780e2",
-            },
-            {
-                "name": "Small Residential Service (Premier Choice) R-Basic",
-                "label": "5cacc6545457a3634c7780e2",
-            },
-            {
-                "name": "Large Residential Service (Premier Choice Large) R-Basic L [Frozen]",
-                "label": "5cacc6e75457a3a8497780e2",
-            },
-            {
-                "name": "Residential Time of Use (Saver Choice) TOU-E",
-                "label": "5cacc7715457a393487780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max)",
-                "label": "5cacc9ae5457a3c6517780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Plus) R-2",
-                "label": "5cacc9d15457a31d537780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max) R-3",
-                "label": "5caccb2f5457a3c8517780e2",
-            },
-            {
-                "name": "Residential Service (Pilot Technology Rate) R-Tech",
-                "label": "5caccd925457a31a537780e2",
-            },
-        ],
-        "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
-    }
+    defaults = {"api": "fakeAPIKey", "lat": "1", "lon": "1", "plan": DEFAULT_PLAN}
+    defaults.update(kwargs)
+    rates = openeihttp.Rates(**defaults)
+    await rates.clear_cache()
+    await rates.update()
+    return rates
+
+
+@pytest.mark.parametrize(
+    "rates_kwargs",
+    [
+        {"api": "fakeAPIKey", "lat": "1", "lon": "1"},
+        {"api": "fakeAPIKey", "address": "12345"},
+    ],
+    ids=["lat_lon", "address"],
+)
+async def test_get_lookup_data(rates_kwargs, mock_aioclient):
+    """Test plan lookup by coordinates and by address."""
+    mock_aioclient.get(TEST_REGEX, status=200, body=load_fixture("lookup.json"))
+    rates = openeihttp.Rates(**rates_kwargs)
+    assert await rates.lookup_plans() == EXPECTED_LOOKUP_PLANS
 
 
 @freeze_time("2021-08-13 10:21:34")
 async def test_get_rate_data(mock_aioclient, caplog):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-        repeat=True,
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey",
-        lat="1",
-        lon="1",
-        plan="574613aa5457a3557e906f5b",
-        cache_file=".cache/574613aa5457a3557e906f5b",
-    )
+    """Test rate schedules with custom cache file and logging."""
     assert datetime.datetime.now() == datetime.datetime(2021, 8, 13, 10, 21, 34)
-    await test_rates.clear_cache()
     with caplog.at_level(logging.DEBUG):
-        await test_rates.update()
-    status = test_rates.current_rate
-    assert status == 0.06118
-    assert "No data populated, refreshing data." in caplog.text
-    status = test_rates.current_sell_rate
-    assert status is None
-
-
-@freeze_time("2021-08-13 13:20:00")
-async def test_get_rate_data_2(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.current_rate
-    adjustment = test_rates.current_adjustment
-    assert status == 0.24477
-    assert adjustment == 0.02824917
-
-
-@freeze_time("2021-08-14 13:20:00")
-async def test_get_rate_data_weekend(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.current_rate
-    adjustment = test_rates.current_adjustment
-    assert status == 0.06118
-    assert adjustment == 0.02138383
-
-
-@freeze_time("2021-08-14 13:20:00")
-async def test_get_rate_data_weekend_demand(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_demand_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    assert datetime.datetime.now() == datetime.datetime(2021, 8, 14, 13, 20, 00)
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.current_demand_rate
-    assert status == 0
-
-
-@freeze_time("2021-08-13 10:21:34")
-async def test_get_rate_data_demand(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_demand_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.current_demand_rate
-    assert status == 0
-
-
-@freeze_time("2021-08-13 17:20:00")
-async def test_get_rate_data_2_demand(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_demand_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.current_demand_rate
-    adjustment = test_rates.current_demand_adjustment
-    assert status == 8.4
-    assert adjustment == 0.838
-
-
-async def test_get_demand_unit(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_demand_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.demand_unit
-    assert status == "kW"
-
-
-async def test_get_distributed_generation(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.distributed_generation
-    assert status == "Net Metering"
-
-
-async def test_get_aproval(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.approval
-    assert status
-
-
-async def test_get_name(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.rate_name
-    assert status == "Residential Service TOU Time Advantage 7PM-Noon (ET-2)"
-
-
-async def test_get_lookup_data_404(mock_aioclient):
-    """Test lookup error 404"""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=404,
-        body="",
-    )
-    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
-    with pytest.raises(openeihttp.UrlNotFound):
-        await test_lookup.lookup_plans()
-
-
-async def test_get_lookup_data_401(mock_aioclient):
-    """Test lookup error 401"""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=401,
-        body="",
-    )
-    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
-    with pytest.raises(openeihttp.NotAuthorized):
-        await test_lookup.lookup_plans()
-
-
-async def test_get_plan_data_404(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=404,
-        body="",
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    with pytest.raises(openeihttp.UrlNotFound):
-        await test_rates.clear_cache()
-        await test_rates.update()
-
-
-async def test_get_plan_data_401(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=401,
-        body="",
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    with pytest.raises(openeihttp.NotAuthorized):
-        await test_rates.clear_cache()
-        await test_rates.update()
-
-
-async def test_get_plan_data_api_err(mock_aioclient, caplog):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("api_error.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    with pytest.raises(openeihttp.APIError):
-        await test_rates.clear_cache()
-        await test_rates.update()
-        assert "No api_key was supplied. Get one at https://api.openei.org:443" in caplog.text
-
-
-async def test_get_lookup_data_api_err(mock_aioclient, caplog):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("api_error.json"),
-    )
-    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
-    with pytest.raises(openeihttp.APIError):
-        await test_lookup.lookup_plans()
-        assert "No api_key was supplied. Get one at https://api.openei.org:443" in caplog.text
-
-
-async def test_rate_limit_err(mock_aioclient, caplog):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("rate_limit.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    with pytest.raises(openeihttp.RateLimit):
-        await test_rates.clear_cache()
-        await test_rates.update()
-        assert (
-            "You have exceeded your rate limit. Try again later or contact us at https://api.openei.org:443/contact/ for assistance"
-            in caplog.text
+        test_rates = await _load_rates(
+            mock_aioclient,
+            "plan_data.json",
+            repeat=True,
+            cache_file=f".cache/{DEFAULT_PLAN}",
         )
+    assert test_rates.current_rate == 0.06118
+    assert "No data populated, refreshing data." in caplog.text
+    assert test_rates.current_sell_rate is None
 
 
-async def test_get_all_rates(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.all_rates
-    assert status == (
-        [0.24477, 0.06118, 0.19847, 0.06116],
-        [0.02824917, 0.02138383, 0.02651779, 0.02138308],
-    )
+@pytest.mark.parametrize(
+    ("time_freeze", "expected_rate", "expected_adj"),
+    [
+        ("2021-08-13 13:20:00", 0.24477, 0.02824917),
+        ("2021-08-14 13:20:00", 0.06118, 0.02138383),
+    ],
+    ids=["weekday_peak", "weekend"],
+)
+async def test_get_rate_data_schedules(time_freeze, expected_rate, expected_adj, mock_aioclient):
+    """Test weekday and weekend energy rate schedules."""
+    with freeze_time(time_freeze):
+        test_rates = await _load_rates(mock_aioclient, "plan_data.json")
+        assert test_rates.current_rate == expected_rate
+        assert test_rates.current_adjustment == expected_adj
 
 
-async def test_get_all_rates_demand(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_demand_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.all_rates
-    assert status == ([0.07798, 0.11017, 0.1316], [0.005741, 0.005741, 0.005741])
+@pytest.mark.parametrize(
+    ("time_freeze", "expected_rate", "expected_adj"),
+    [
+        ("2021-08-14 13:20:00", 0, None),
+        ("2021-08-13 10:21:34", 0, None),
+        ("2021-08-13 17:20:00", 8.4, 0.838),
+    ],
+    ids=["weekend", "weekday_offpeak", "weekday_peak"],
+)
+async def test_get_demand_rate_data(time_freeze, expected_rate, expected_adj, mock_aioclient):
+    """Test demand rate schedules."""
+    with freeze_time(time_freeze):
+        test_rates = await _load_rates(mock_aioclient, "plan_demand_data.json")
+        assert test_rates.current_demand_rate == expected_rate
+        if expected_adj is not None:
+            assert test_rates.current_demand_adjustment == expected_adj
 
 
-async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient, caplog):
-    """Test v4 Status reply"""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("lookup_radius.json"),
-    )
+@pytest.mark.parametrize(
+    ("fixture", "attr", "expected"),
+    [
+        ("plan_demand_data.json", "demand_unit", "kW"),
+        ("plan_data.json", "distributed_generation", "Net Metering"),
+        ("plan_data.json", "approval", True),
+        ("plan_data.json", "rate_name", "Residential Service TOU Time Advantage 7PM-Noon (ET-2)"),
+        (
+            "plan_data.json",
+            "all_rates",
+            (
+                [0.24477, 0.06118, 0.19847, 0.06116],
+                [0.02824917, 0.02138383, 0.02651779, 0.02138308],
+            ),
+        ),
+        (
+            "plan_demand_data.json",
+            "all_rates",
+            ([0.07798, 0.11017, 0.1316], [0.005741, 0.005741, 0.005741]),
+        ),
+        ("plan_tier_data.json", "mincharge", (10, "$/month")),
+        ("plan_data.json", "mincharge", None),
+        ("fixed_charge_rate.json", "fixedchargefirstmeter", (15.75, "$/month")),
+        ("plan_tier_data.json", "fixedchargefirstmeter", None),
+    ],
+)
+async def test_plan_properties(fixture, attr, expected, mock_aioclient):
+    """Test plan metadata and charge properties."""
+    test_rates = await _load_rates(mock_aioclient, fixture)
+    assert getattr(test_rates, attr) == expected
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected_exc"),
+    [
+        (404, openeihttp.UrlNotFound),
+        (401, openeihttp.NotAuthorized),
+    ],
+)
+@pytest.mark.parametrize("call_type", ["lookup", "plan"])
+async def test_http_errors(status_code, expected_exc, call_type, mock_aioclient):
+    """Test HTTP 404 and 401 handling for lookup and plan updates."""
+    mock_aioclient.get(TEST_REGEX, status=status_code, body="")
+    if call_type == "lookup":
+        rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+        with pytest.raises(expected_exc):
+            await rates.lookup_plans()
+    else:
+        rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1", plan=DEFAULT_PLAN)
+        await rates.clear_cache()
+        with pytest.raises(expected_exc):
+            await rates.update()
+
+
+@pytest.mark.parametrize(
+    ("fixture", "expected_exc", "expected_log", "call_type"),
+    [
+        (
+            "api_error.json",
+            openeihttp.APIError,
+            "No api_key was supplied. Get one at https://api.openei.org:443",
+            "plan",
+        ),
+        (
+            "api_error.json",
+            openeihttp.APIError,
+            "No api_key was supplied. Get one at https://api.openei.org:443",
+            "lookup",
+        ),
+        (
+            "rate_limit.json",
+            openeihttp.RateLimit,
+            "You have exceeded your rate limit. Try again later or contact us at https://api.openei.org:443/contact/ for assistance",
+            "plan",
+        ),
+    ],
+)
+async def test_api_errors(fixture, expected_exc, expected_log, call_type, mock_aioclient, caplog):
+    """Test API error and rate limit responses."""
+    mock_aioclient.get(TEST_REGEX, status=200, body=load_fixture(fixture))
+    if call_type == "lookup":
+        rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+        with pytest.raises(expected_exc):
+            await rates.lookup_plans()
+    else:
+        rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1", plan=DEFAULT_PLAN)
+        await rates.clear_cache()
+        with pytest.raises(expected_exc):
+            await rates.update()
+    assert expected_log in caplog.text
+
+
+async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient):
+    """Test plan lookup with search radius."""
+    mock_aioclient.get(TEST_REGEX, status=200, body=load_fixture("lookup_radius.json"))
     status = await test_lookup_radius.lookup_plans()
     assert status == {
-        "Arizona Public Service Co": [
-            {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU; Time Adv Super peak 7PM-Noon (ET-SP)",
-                "label": "542aec8a5257a310694b1ab6",
-            },
-            {
-                "name": "Residential Service Bundled Standard rate",
-                "label": "55563ddf5457a3bf6c8b4570",
-            },
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU ; Time Adv 7PM-Noon  (ET-2)",
-                "label": "55563df55457a35e758b4568",
-            },
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU w/ Demand; Combined Adv  7PM-Noon (ECT-2)",
-                "label": "562bea025457a31838418740",
-            },
-            {
-                "name": "Residential Service Bundled Standard rate",
-                "label": "5743aa135457a3a636906f5b",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "574613aa5457a3557e906f5b",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
-                "label": "574615f85457a3557e906f5c",
-            },
-            {
-                "name": "Residential Service Standard (E-12)",
-                "label": "5748ab725457a37e7d906f5b",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "5748ac7a5457a37d7d906f5b",
-            },
-            {
-                "name": "Residential Service Standard (E-12)",
-                "label": "5881345e5457a35973316ce7",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "588135ee5457a3873f316ce6",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
-                "label": "5890c92f5457a36c373dbec0",
-            },
-            {
-                "name": "Residential Service Standard (E-12) Low Income",
-                "label": "59fcde8e5457a3a04cc05084",
-            },
-            {
-                "name": "Residential Service Standard (E-12) [Frozen]",
-                "label": "5a592dee5457a3931d423a81",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2) [Frozen]",
-                "label": "5a5930055457a36274423a7d",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2) [Frozen]",
-                "label": "5a5930bf5457a3371c423a7e",
-            },
-            {
-                "name": "Residential Time of Use (Saver Choice)",
-                "label": "5a5933d25457a3ad69423a81",
-            },
-            {
-                "name": "Residential Service (Saver Choice Plus)",
-                "label": "5a5935475457a3ad69423a82",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max)",
-                "label": "5a5936ef5457a36274423a7f",
-            },
-            {
-                "name": "Extra Small Residential Service (Lite Choice)",
-                "label": "5a5937bb5457a3b71c423a7f",
-            },
-            {
-                "name": "Small Residential Service (Premier Choice)",
-                "label": "5a59388c5457a3931d423a84",
-            },
-            {
-                "name": "Large Residential Service (Premier Choice Large)",
-                "label": "5a5939515457a3371c423a7f",
-            },
-            {
-                "name": "Residential Service (Pilot Technology Rate)",
-                "label": "5a593d815457a3371c423a80",
-            },
-            {
-                "name": "Extra Small Residential Service (Lite Choice) R-XS",
-                "label": "5cacc5605457a379257780e2",
-            },
-            {
-                "name": "Small Residential Service (Premier Choice) R-Basic",
-                "label": "5cacc6545457a3634c7780e2",
-            },
-            {
-                "name": "Large Residential Service (Premier Choice Large) R-Basic L [Frozen]",
-                "label": "5cacc6e75457a3a8497780e2",
-            },
-            {
-                "name": "Residential Time of Use (Saver Choice) TOU-E",
-                "label": "5cacc7715457a393487780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max)",
-                "label": "5cacc9ae5457a3c6517780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Plus) R-2",
-                "label": "5cacc9d15457a31d537780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max) R-3",
-                "label": "5caccb2f5457a3c8517780e2",
-            },
-            {
-                "name": "Residential Service (Pilot Technology Rate) R-Tech",
-                "label": "5caccd925457a31a537780e2",
-            },
-        ],
+        "Arizona Public Service Co": APS_PLANS,
         "Buckeye Water C&D District": [
             {"label": "539fb6fcec4f024bc1dc0679", "name": "Residential"},
             {"label": "539fc06bec4f024c27d89c25", "name": "Private Irrigation Pump"},
@@ -808,8 +530,6 @@ async def test_get_lookup_data_radius(test_lookup_radius, mock_aioclient, caplog
         ],
         "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
     }
-    # assert "&api_key=[REDACTED]" in caplog.text
-    # assert "&lat=[REDACTED]&lon=[REDACTED]" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -827,186 +547,40 @@ async def test_get_tier_rate_data(
     reading, time_freeze, expected_rate, expected_structure, mock_aioclient
 ):
     """Test rate schedules for different tiers."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey",
-        reading=reading,
-        plan="574613aa5457a3557e906f5b",
-    )
     with freeze_time(time_freeze):
-        await test_rates.clear_cache()
-        await test_rates.update()
+        test_rates = await _load_rates(mock_aioclient, "plan_tier_data.json", reading=reading)
         assert test_rates.current_rate == expected_rate
         assert test_rates.current_energy_rate_structure == expected_structure
 
 
-@freeze_time("2025-01-01 10:21:34")
-async def test_get_next_rate_structure(mock_aioclient):
-    """
-    Test calculating the next rate structure
-    This test is run on a weekday with the new structure occuring the same day
-    """
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-
-    await test_rates.clear_cache()
-    await test_rates.update()
-
-    current_structure = test_rates.current_energy_rate_structure
-    assert current_structure == 3
-
-    next_struture = test_rates.next_energy_rate_structure
-    next_time = test_rates.next_energy_rate_structure_time
-    assert next_struture == 2
-    assert next_time == datetime.datetime(2025, 1, 1, 12, 0)
-
-
-@freeze_time("2025-01-01 23:21:34")
-async def test_get_next_rate_structure_next_day(mock_aioclient):
-    """
-    Test calculating the next rate structure
-    This test is run on a weekday with the new structure occuring the next day (also a weekday)
-    """
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-
-    await test_rates.clear_cache()
-    await test_rates.update()
-
-    current_structure = test_rates.current_energy_rate_structure
-    assert current_structure == 3
-
-    next_struture = test_rates.next_energy_rate_structure
-    next_time = test_rates.next_energy_rate_structure_time
-    assert next_struture == 2
-    assert next_time == datetime.datetime(2025, 1, 2, 12, 0)
-
-
-@freeze_time("2025-01-03 23:21:34")
-async def test_get_next_rate_structure_weekend_loop(mock_aioclient):
-    """
-    Test calculating the next rate structure
-    This test is run on a weekday. The following weekend has the same structure for the entire week
-    So we must loop back to the following weekday to find the next structure
-    """
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-
-    await test_rates.clear_cache()
-    await test_rates.update()
-
-    current_structure = test_rates.current_energy_rate_structure
-    assert current_structure == 3
-
-    next_struture = test_rates.next_energy_rate_structure
-    next_time = test_rates.next_energy_rate_structure_time
-    assert next_struture == 2
-    assert next_time == datetime.datetime(2025, 1, 6, 12, 0)
-
-
-@freeze_time("2025-01-03 23:21:34")
-async def test_get_next_rate_structure_next_month(mock_aioclient):
-    """
-    Test calculating the next rate structure
-    plan_tier_data has a different structure than plan_data and the structure doesn't change until May
-    """
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-
-    await test_rates.clear_cache()
-    await test_rates.update()
-
-    current_structure = test_rates.current_energy_rate_structure
-    assert current_structure == 1
-
-    next_struture = test_rates.next_energy_rate_structure
-    next_time = test_rates.next_energy_rate_structure_time
-    assert next_struture == 0
-    assert next_time == datetime.datetime(2025, 5, 1, 0, 0)
-
-
-@freeze_time("2025-01-04 23:21:34")
-async def test_get_next_rate_structure_next_month_weekend_start(mock_aioclient):
-    """
-    Test calculating the next rate structure
-    This test is run on a weekend. The following weekday has the same structure for the entire week
-    The structure doesn't change until May
-    """
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-
-    await test_rates.clear_cache()
-    await test_rates.update()
-
-    current_structure = test_rates.current_energy_rate_structure
-    assert current_structure == 1
-
-    next_struture = test_rates.next_energy_rate_structure
-    next_time = test_rates.next_energy_rate_structure_time
-    assert next_struture == 0
-    assert next_time == datetime.datetime(2025, 5, 1, 0, 0)
-
-
-@freeze_time("2024-11-01 23:21:34")
-async def test_get_next_rate_structure_next_year(mock_aioclient):
-    """
-    Test calculating the next rate structure
-    This test is run on a weekday. The following weekend has the same structure for the entire week
-    The structure doesn't change until May of the following year
-    """
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-
-    await test_rates.clear_cache()
-    await test_rates.update()
-
-    current_structure = test_rates.current_energy_rate_structure
-    assert current_structure == 1
-
-    next_struture = test_rates.next_energy_rate_structure
-    next_time = test_rates.next_energy_rate_structure_time
-    assert next_struture == 0
-    assert next_time == datetime.datetime(2025, 5, 1, 0, 0)
+@pytest.mark.parametrize(
+    ("time_freeze", "fixture", "expected_current", "expected_next", "expected_time"),
+    [
+        ("2025-01-01 10:21:34", "plan_data.json", 3, 2, datetime.datetime(2025, 1, 1, 12, 0)),
+        ("2025-01-01 23:21:34", "plan_data.json", 3, 2, datetime.datetime(2025, 1, 2, 12, 0)),
+        ("2025-01-03 23:21:34", "plan_data.json", 3, 2, datetime.datetime(2025, 1, 6, 12, 0)),
+        ("2025-01-03 23:21:34", "plan_tier_data.json", 1, 0, datetime.datetime(2025, 5, 1, 0, 0)),
+        ("2025-01-04 23:21:34", "plan_tier_data.json", 1, 0, datetime.datetime(2025, 5, 1, 0, 0)),
+        ("2024-11-01 23:21:34", "plan_tier_data.json", 1, 0, datetime.datetime(2025, 5, 1, 0, 0)),
+    ],
+    ids=[
+        "same_day",
+        "next_day",
+        "weekend_loop",
+        "next_month",
+        "next_month_weekend_start",
+        "next_year",
+    ],
+)
+async def test_get_next_rate_structure(
+    time_freeze, fixture, expected_current, expected_next, expected_time, mock_aioclient
+):
+    """Test calculating the next rate structure across day, weekend, month, and year transitions."""
+    with freeze_time(time_freeze):
+        test_rates = await _load_rates(mock_aioclient, fixture)
+        assert test_rates.current_energy_rate_structure == expected_current
+        assert test_rates.next_energy_rate_structure == expected_next
+        assert test_rates.next_energy_rate_structure_time == expected_time
 
 
 @pytest.mark.parametrize(
@@ -1020,265 +594,37 @@ async def test_get_next_rate_structure_next_year(mock_aioclient):
 @freeze_time("2021-08-13 10:21:34")
 async def test_get_monthly_tier_rate_data(reading, expected_rate, mock_aioclient):
     """Test monthly tier rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey",
-        reading=reading,
-        plan="574613aa5457a3557e906f5b",
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
+    test_rates = await _load_rates(mock_aioclient, "plan_tier_data.json", reading=reading)
     assert test_rates.monthly_tier_rate == expected_rate
-
-
-async def test_get_lookup_data_with_address(test_lookup_address, mock_aioclient):
-    """Test v4 Status reply"""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("lookup.json"),
-    )
-    status = await test_lookup_address.lookup_plans()
-    assert status == {
-        "Arizona Public Service Co": [
-            {"name": "Time Advantage 7pm to noon", "label": "539fba68ec4f024bc1dc2db3"},
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU; Time Adv Super peak 7PM-Noon (ET-SP)",
-                "label": "542aec8a5257a310694b1ab6",
-            },
-            {
-                "name": "Residential Service Bundled Standard rate",
-                "label": "55563ddf5457a3bf6c8b4570",
-            },
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU ; Time Adv 7PM-Noon  (ET-2)",
-                "label": "55563df55457a35e758b4568",
-            },
-            {
-                "name": "Residential Bundled & Adjustments No Tax TOU w/ Demand; Combined Adv  7PM-Noon (ECT-2)",
-                "label": "562bea025457a31838418740",
-            },
-            {
-                "name": "Residential Service Bundled Standard rate",
-                "label": "5743aa135457a3a636906f5b",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "574613aa5457a3557e906f5b",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
-                "label": "574615f85457a3557e906f5c",
-            },
-            {
-                "name": "Residential Service Standard (E-12)",
-                "label": "5748ab725457a37e7d906f5b",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "5748ac7a5457a37d7d906f5b",
-            },
-            {
-                "name": "Residential Service Standard (E-12)",
-                "label": "5881345e5457a35973316ce7",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2)",
-                "label": "588135ee5457a3873f316ce6",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2)",
-                "label": "5890c92f5457a36c373dbec0",
-            },
-            {
-                "name": "Residential Service Standard (E-12) Low Income",
-                "label": "59fcde8e5457a3a04cc05084",
-            },
-            {
-                "name": "Residential Service Standard (E-12) [Frozen]",
-                "label": "5a592dee5457a3931d423a81",
-            },
-            {
-                "name": "Residential Service TOU Time Advantage 7PM-Noon (ET-2) [Frozen]",
-                "label": "5a5930055457a36274423a7d",
-            },
-            {
-                "name": "Residential Service TOU Combined Advantage 7PM-Noon  (ECT-2) [Frozen]",
-                "label": "5a5930bf5457a3371c423a7e",
-            },
-            {
-                "name": "Residential Time of Use (Saver Choice)",
-                "label": "5a5933d25457a3ad69423a81",
-            },
-            {
-                "name": "Residential Service (Saver Choice Plus)",
-                "label": "5a5935475457a3ad69423a82",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max)",
-                "label": "5a5936ef5457a36274423a7f",
-            },
-            {
-                "name": "Extra Small Residential Service (Lite Choice)",
-                "label": "5a5937bb5457a3b71c423a7f",
-            },
-            {
-                "name": "Small Residential Service (Premier Choice)",
-                "label": "5a59388c5457a3931d423a84",
-            },
-            {
-                "name": "Large Residential Service (Premier Choice Large)",
-                "label": "5a5939515457a3371c423a7f",
-            },
-            {
-                "name": "Residential Service (Pilot Technology Rate)",
-                "label": "5a593d815457a3371c423a80",
-            },
-            {
-                "name": "Extra Small Residential Service (Lite Choice) R-XS",
-                "label": "5cacc5605457a379257780e2",
-            },
-            {
-                "name": "Small Residential Service (Premier Choice) R-Basic",
-                "label": "5cacc6545457a3634c7780e2",
-            },
-            {
-                "name": "Large Residential Service (Premier Choice Large) R-Basic L [Frozen]",
-                "label": "5cacc6e75457a3a8497780e2",
-            },
-            {
-                "name": "Residential Time of Use (Saver Choice) TOU-E",
-                "label": "5cacc7715457a393487780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max)",
-                "label": "5cacc9ae5457a3c6517780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Plus) R-2",
-                "label": "5cacc9d15457a31d537780e2",
-            },
-            {
-                "name": "Residential Service (Saver Choice Max) R-3",
-                "label": "5caccb2f5457a3c8517780e2",
-            },
-            {
-                "name": "Residential Service (Pilot Technology Rate) R-Tech",
-                "label": "5caccd925457a31a537780e2",
-            },
-        ],
-        "Not Listed": [{"label": "Not Listed", "name": "Not Listed"}],
-    }
 
 
 @freeze_time("2021-08-13 10:21:34")
 async def test_get_rate_data_address(test_rates_address, mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-    )
+    """Test rate schedules using address."""
+    mock_aioclient.get(TEST_REGEX, status=200, body=load_fixture("plan_data.json"))
     await test_rates_address.clear_cache()
     await test_rates_address.update()
-    status = test_rates_address.current_rate
-    assert status == 0.06118
+    assert test_rates_address.current_rate == 0.06118
 
 
 async def test_missing_loc(test_lookup_missing_loc, caplog):
-    """Missing API key check."""
+    """Test missing location raises InvalidCall."""
     with pytest.raises(InvalidCall):
         await test_lookup_missing_loc.lookup_plans()
-        assert "Missing location data for a plan lookup." in caplog.text
-
-
-async def test_mincharge(test_lookup_tier_low, mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-    )
-    await test_lookup_tier_low.clear_cache()
-    await test_lookup_tier_low.update()
-    status = test_lookup_tier_low.mincharge
-    assert status == (10, "$/month")
-
-
-async def test_mincharge_none(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-        repeat=True,
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.mincharge
-    assert status is None
+    assert "Missing location data for a plan lookup." in caplog.text
 
 
 async def test_get_rate_data_cache(mock_aioclient, caplog):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_data.json"),
-        repeat=True,
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
+    """Test cache population and stale refresh."""
+    mock_aioclient.get(TEST_REGEX, status=200, body=load_fixture("plan_data.json"), repeat=True)
+    test_rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1", plan=DEFAULT_PLAN)
     with caplog.at_level(logging.DEBUG):
         await test_rates.update()
     assert "No data populated, refreshing data." in caplog.text
     thefuture = datetime.date.today() + datetime.timedelta(days=3)
-    with freeze_time(thefuture):
-        with caplog.at_level(logging.DEBUG):
-            await test_rates.update()
+    with freeze_time(thefuture), caplog.at_level(logging.DEBUG):
+        await test_rates.update()
     assert "Data stale, refreshing from API." in caplog.text
-
-
-async def test_fixedchargefirstmeter(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("fixed_charge_rate.json"),
-        repeat=True,
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.fixedchargefirstmeter
-    assert status == (15.75, "$/month")
-
-
-async def test_fixedchargefirstmeter_none(mock_aioclient):
-    """Test rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("plan_tier_data.json"),
-        repeat=True,
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    await test_rates.clear_cache()
-    await test_rates.update()
-    status = test_rates.fixedchargefirstmeter
-    assert status is None
 
 
 @pytest.mark.parametrize(
@@ -1291,89 +637,40 @@ async def test_fixedchargefirstmeter_none(mock_aioclient):
 )
 async def test_get_sell_rate_data(time_freeze, expected_rate, mock_aioclient):
     """Test sell rate schedules."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("sell_rate.json"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
     with freeze_time(time_freeze):
-        await test_rates.clear_cache()
-        await test_rates.update()
+        test_rates = await _load_rates(mock_aioclient, "sell_rate.json")
         assert test_rates.current_sell_rate == expected_rate
 
 
-async def test_get_lookup_data_timeout(mock_aioclient, caplog):
-    """Test lookup_plans handles TimeoutError gracefully."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        exception=TimeoutError("Timeout"),
-    )
-    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
-    with pytest.raises(openeihttp.APIError):
-        await test_lookup.lookup_plans()
-    assert "Timeout while updating" in caplog.text
-
-
-async def test_get_plan_data_timeout(mock_aioclient, caplog):
-    """Test update handles TimeoutError gracefully."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        exception=TimeoutError("Timeout"),
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    with pytest.raises(openeihttp.APIError):
-        await test_rates.clear_cache()
-        await test_rates.update()
-    assert "Timeout while updating" in caplog.text
-
-
-async def test_get_lookup_data_non_json(mock_aioclient, caplog):
-    """Test lookup_plans handles non-JSON response gracefully."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body="Not a JSON string",
-    )
-    test_lookup = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
-    with pytest.raises(openeihttp.APIError):
-        await test_lookup.lookup_plans()
-    assert "Error: Not a JSON string" in caplog.text
-
-
-async def test_get_plan_data_non_json(mock_aioclient, caplog):
-    """Test update handles non-JSON response gracefully."""
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body="Not a JSON string",
-    )
-    test_rates = openeihttp.Rates(
-        api="fakeAPIKey", lat="1", lon="1", plan="574613aa5457a3557e906f5b"
-    )
-    with pytest.raises(openeihttp.APIError):
-        await test_rates.clear_cache()
-        await test_rates.update()
-    assert "Error: Not a JSON string" in caplog.text
+@pytest.mark.parametrize("call_type", ["lookup", "plan"])
+@pytest.mark.parametrize(
+    ("mock_kwargs", "expected_log"),
+    [
+        ({"exception": TimeoutError("Timeout")}, "Timeout while updating"),
+        ({"status": 200, "body": "Not a JSON string"}, "Error: Not a JSON string"),
+    ],
+    ids=["timeout", "non_json"],
+)
+async def test_request_failures(call_type, mock_kwargs, expected_log, mock_aioclient, caplog):
+    """Test timeout and non-JSON responses for lookup and plan updates."""
+    mock_aioclient.get(TEST_REGEX, **mock_kwargs)
+    if call_type == "lookup":
+        rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1")
+        with pytest.raises(openeihttp.APIError):
+            await rates.lookup_plans()
+    else:
+        rates = openeihttp.Rates(api="fakeAPIKey", lat="1", lon="1", plan=DEFAULT_PLAN)
+        await rates.clear_cache()
+        with pytest.raises(openeihttp.APIError):
+            await rates.update()
+    assert expected_log in caplog.text
 
 
 async def test_get_lookup_data_content_type_error(mock_aioclient, caplog):
     """Test lookup_plans handles ContentTypeError gracefully."""
-    from aiohttp import RequestInfo
-    from aiohttp.client_exceptions import ContentTypeError
-    from yarl import URL
-
-    req_info = RequestInfo(
-        url=URL("https://api.openei.org/utility_rates"),
-        method="GET",
-        headers=None,
-    )
+    req_info = RequestInfo(url=URL(TEST_URL), method="GET", headers=None)
     mock_aioclient.get(
-        re.compile(TEST_PATTERN),
+        TEST_REGEX,
         exception=ContentTypeError(
             req_info,
             (),
@@ -1388,13 +685,7 @@ async def test_get_lookup_data_content_type_error(mock_aioclient, caplog):
 
 async def test_session_reuse(mock_aioclient):
     """Test custom session is used and not closed."""
-    import aiohttp
-
-    mock_aioclient.get(
-        re.compile(TEST_PATTERN),
-        status=200,
-        body=load_fixture("lookup.json"),
-    )
+    mock_aioclient.get(TEST_REGEX, status=200, body=load_fixture("lookup.json"))
     async with aiohttp.ClientSession() as custom_session:
         test_lookup = openeihttp.Rates(
             api="fakeAPIKey",
@@ -1414,12 +705,27 @@ async def test_default_none_coordinates():
     assert test_lookup._lon is None
 
 
-async def test_partial_coordinates():
+@pytest.mark.parametrize("coord_kwargs", [{"lat": 1.0}, {"lon": 1.0}], ids=["lat_only", "lon_only"])
+async def test_partial_coordinates(coord_kwargs):
     """Test that partial coordinates raise InvalidCall."""
-    test_lookup_lat = openeihttp.Rates(api="fakeAPIKey", lat=1.0)
+    test_lookup = openeihttp.Rates(api="fakeAPIKey", **coord_kwargs)
     with pytest.raises(openeihttp.InvalidCall):
-        await test_lookup_lat.lookup_plans()
+        await test_lookup.lookup_plans()
 
-    test_lookup_lon = openeihttp.Rates(api="fakeAPIKey", lon=1.0)
-    with pytest.raises(openeihttp.InvalidCall):
-        await test_lookup_lon.lookup_plans()
+
+@freeze_time("2021-08-13 10:21:34")
+async def test_missing_rate_structures_and_reading_adjustment(mock_aioclient):
+    """Test None returns when rate structures or readings are missing, and tiered adjustment."""
+    test_rates = await _load_rates(mock_aioclient, "plan_data.json")
+    assert test_rates.monthly_tier_rate is None
+    assert test_rates.current_demand_adjustment is None
+
+    # Test tiered adjustment when reading is set and adj is present on last tier
+    test_rates._reading = 10.0
+    assert test_rates.current_adjustment == 0.02138383
+
+    # Test missing energyratestructure
+    test_rates._data = {}
+    test_rates._reading = 0.0
+    assert test_rates.current_rate is None
+    assert test_rates.current_adjustment is None

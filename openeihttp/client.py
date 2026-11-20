@@ -47,6 +47,7 @@ class Rates:
             self._address,
         ]
         self._cache_file = cache_file
+        self._cache = OpenEICache(cache_file)
         self._timestamp = datetime.datetime(1990, 1, 1, 0, 0, 0)
         self._session = session
 
@@ -103,6 +104,17 @@ class Rates:
             _LOGGER.error("%s", err)
             return {"error": err}
 
+    def _check_api_error(self, result: dict[str, Any]) -> None:
+        """Log and raise if the API response contains an error."""
+        if "error" not in result:
+            return
+        err = result["error"]
+        message = err["message"] if isinstance(err, dict) and "message" in err else str(err)
+        _LOGGER.error("Error: %s", message)
+        if "You have exceeded your rate limit." in message:
+            raise RateLimit
+        raise APIError
+
     async def lookup_plans(self) -> dict[str, Any]:
         """Return the rate plan names per utility in the area."""
         if self._address == "" and (self._lat is None or self._lon is None):
@@ -132,12 +144,7 @@ class Rates:
         rate_names: dict[str, Any] = {}
 
         result = await self.process_request(params, timeout=90)
-
-        if "error" in result:
-            err = result["error"]
-            message = err["message"] if isinstance(err, dict) and "message" in err else str(err)
-            _LOGGER.error("Error: %s", message)
-            raise APIError
+        self._check_api_error(result)
 
         if "items" in result:
             for item in result["items"]:
@@ -155,11 +162,10 @@ class Rates:
         """Update data only if we need to."""
         if self._data is None:
             _LOGGER.debug("No data populated, refreshing data.")
-            cache = OpenEICache(self._cache_file) if self._cache_file else OpenEICache()
             # Load cached file if one exists
-            if await cache.cache_exists():
+            if await self._cache.cache_exists():
                 _LOGGER.debug("Cache file exists, reading...")
-                self._data = await cache.read_cache()
+                self._data = await self._cache.read_cache()
             else:
                 _LOGGER.debug("Cache file missing, pulling API data...")
                 await self.update_data()
@@ -183,28 +189,19 @@ class Rates:
         }
 
         result = await self.process_request(params, timeout=90)
-
-        if "error" in result:
-            err = result["error"]
-            message = err["message"] if isinstance(err, dict) and "message" in err else str(err)
-            _LOGGER.error("Error: %s", message)
-            if "You have exceeded your rate limit." in message:
-                raise RateLimit
-            raise APIError
+        self._check_api_error(result)
 
         if "items" in result:
             data = result["items"][0]
             self._data = data
             # Insert cache writing call here
-            cache = OpenEICache(self._cache_file) if self._cache_file else OpenEICache()
             json_data = json.dumps(data).encode("utf-8")
-            await cache.write_cache(json_data)
+            await self._cache.write_cache(json_data)
             _LOGGER.debug("Data updated, results: %s", self._data)
 
     async def clear_cache(self) -> None:
         """Clear cache file."""
-        cache = OpenEICache(self._cache_file) if self._cache_file else OpenEICache()
-        await cache.clear_cache()
+        await self._cache.clear_cache()
 
     @property
     def current_energy_rate_structure(self) -> int | None:
@@ -303,6 +300,19 @@ class Rates:
 
         return None, current_structure
 
+    def _tiered_rate(self, date: datetime.datetime, multiplier: int = 1) -> float | None:
+        """Return tiered energy rate for a specific date and reading threshold multiplier."""
+        assert self._data is not None
+        rate_structure = self.rate_structure(date, "energy")
+        if rate_structure is None or not self._reading:
+            return None
+        value = float(self._reading)
+        rate_data = self._data["energyratestructure"][rate_structure]
+        for rate in rate_data:
+            if "max" in rate and value < (rate["max"] * multiplier):
+                return rate["rate"]
+        return rate_data[-1]["rate"]
+
     @property
     def current_rate(self) -> float | None:
         """Return the current rate."""
@@ -311,18 +321,11 @@ class Rates:
     def rate(self, date: datetime.datetime) -> float | None:
         """Return the rate for a specific date."""
         assert self._data is not None
+        if self._reading:
+            return self._tiered_rate(date)
         rate_structure = self.rate_structure(date, "energy")
         if rate_structure is not None:
-            if self._reading:
-                value = float(self._reading)
-                rate_data = self._data["energyratestructure"][rate_structure]
-                for rate in rate_data:
-                    if "max" in rate and value < rate["max"]:
-                        return rate["rate"]
-                    continue
-                return rate_data[-1]["rate"]
-            rate = self._data["energyratestructure"][rate_structure][0]["rate"]
-            return rate
+            return self._data["energyratestructure"][rate_structure][0]["rate"]
         return None
 
     @property
@@ -334,17 +337,12 @@ class Rates:
         """Return the rate for a specific date."""
         assert self._data is not None
         rate_structure = self.rate_structure(date, "energy")
-        if rate_structure is not None:
-            adj = None
-            if self._reading:
-                rate_data = self._data["energyratestructure"][rate_structure]
-                if "adj" in rate_data[-1]:
-                    return rate_data[-1]["adj"]
-            adj_data = self._data["energyratestructure"][rate_structure][0]
-            if "adj" in adj_data:
-                adj = adj_data["adj"]
-            return adj
-        return None
+        if rate_structure is None:
+            return None
+        rate_data = self._data["energyratestructure"][rate_structure]
+        if self._reading and "adj" in rate_data[-1]:
+            return rate_data[-1]["adj"]
+        return rate_data[0].get("adj")
 
     @property
     def monthly_tier_rate(self) -> float | None:
@@ -359,19 +357,7 @@ class Rates:
 
         Requires the monthy accumulative meter reading.
         """
-        assert self._data is not None
-        rate_structure = self.rate_structure(date, "energy")
-        if rate_structure is not None:
-            if self._reading:
-                value = float(self._reading)
-                rate_data = self._data["energyratestructure"][rate_structure]
-                for rate in rate_data:
-                    if "max" in rate and value < (rate["max"] * 29):
-                        return rate["rate"]
-                    continue
-                return rate_data[-1]["rate"]
-            return None
-        return None
+        return self._tiered_rate(date, multiplier=29)
 
     @property
     def all_rates(self) -> tuple[list[float], list[float]] | None:
@@ -412,22 +398,15 @@ class Rates:
         """Return the rate for a specific date."""
         assert self._data is not None
         rate_structure = self.rate_structure(date, "demand")
-        if rate_structure is not None:
-            adj = None
-
-            adj_data = self._data["demandratestructure"][rate_structure][0]
-            if "adj" in adj_data:
-                adj = adj_data["adj"]
-            return adj
-        return None
+        if rate_structure is None:
+            return None
+        return self._data["demandratestructure"][rate_structure][0].get("adj")
 
     @property
     def demand_unit(self) -> str | None:
         """Return the demand rate unit."""
         assert self._data is not None
-        if "demandrateunit" in self._data:
-            return self._data["demandrateunit"]
-        return None
+        return self._data.get("demandrateunit")
 
     @property
     def rate_name(self) -> str:
@@ -445,9 +424,7 @@ class Rates:
     def distributed_generation(self) -> str | None:
         """Return the distributed generation name."""
         assert self._data is not None
-        if "dgrules" in self._data:
-            return self._data["dgrules"]
-        return None
+        return self._data.get("dgrules")
 
     @property
     def mincharge(self) -> tuple[Any, Any] | None:
