@@ -27,6 +27,22 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/firstof9/python-openei"
 
+[dependency-groups]
+dev = [
+    "freezegun",
+    "mypy",
+    "prek",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-timeout",
+    "ruff",
+    "types-aiofiles",
+]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+
 [tool.setuptools.packages.find]
 exclude = ["test*", "tests"]
 

@@ -1,7 +1,0 @@
--r requirements.txt
-pytest
-pytest-asyncio
-pytest-cov
-pytest-timeout
-aiohttp
-freezegun
