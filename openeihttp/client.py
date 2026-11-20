@@ -96,7 +96,7 @@ class Rates:
                     message = {"error": message}
                 return message
 
-        except (TimeoutError, ServerTimeoutError):
+        except TimeoutError, ServerTimeoutError:
             _LOGGER.error("%s: %s", ERROR_TIMEOUT, BASE_URL)
             return {"error": ERROR_TIMEOUT}
         except ContentTypeError as err:
@@ -480,6 +480,6 @@ class Rates:
         if rate_structure is not None:
             try:
                 return self._data["energyratestructure"][rate_structure][0]["sell"]
-            except (KeyError, IndexError):
+            except KeyError, IndexError:
                 return None
         return None
