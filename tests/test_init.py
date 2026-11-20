@@ -711,3 +711,21 @@ async def test_partial_coordinates(coord_kwargs):
     test_lookup = openeihttp.Rates(api="fakeAPIKey", **coord_kwargs)
     with pytest.raises(openeihttp.InvalidCall):
         await test_lookup.lookup_plans()
+
+
+@freeze_time("2021-08-13 10:21:34")
+async def test_missing_rate_structures_and_reading_adjustment(mock_aioclient):
+    """Test None returns when rate structures or readings are missing, and tiered adjustment."""
+    test_rates = await _load_rates(mock_aioclient, "plan_data.json")
+    assert test_rates.monthly_tier_rate is None
+    assert test_rates.current_demand_adjustment is None
+
+    # Test tiered adjustment when reading is set and adj is present on last tier
+    test_rates._reading = 10.0
+    assert test_rates.current_adjustment == 0.02138383
+
+    # Test missing energyratestructure
+    test_rates._data = {}
+    test_rates._reading = 0.0
+    assert test_rates.current_rate is None
+    assert test_rates.current_adjustment is None
