@@ -28,11 +28,21 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: 📦 Install requirements
+      - name: 📦 Set up uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          enable-cache: true
+      - name: 📦 Install dependencies
+        run: uv sync --frozen
+      - name: 🏃 Test with pytest
+        run: uv run pytest --timeout=30 --cov=openeihttp --cov-report=xml
+      - name: 🔍 Lint with ruff
         run: |
-          pip install tox tox-gh-actions
-      - name: 🏃 Test with tox
-        run: tox
+          uv run ruff check openeihttp tests
+          uv run ruff format --check openeihttp tests
+      - name: 🔎 Type check with mypy
+        continue-on-error: true
+        run: uv run mypy openeihttp
       - name: 📤 Upload coverage to Codecov
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
